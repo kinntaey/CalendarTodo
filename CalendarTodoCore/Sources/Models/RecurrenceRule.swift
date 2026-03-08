@@ -1,41 +1,49 @@
 import Foundation
 
-enum RecurrenceFrequency: String, Codable {
+public enum RecurrenceFrequency: String, Codable {
     case daily
     case weekly
     case monthly
     case yearly
 }
 
-struct RecurrenceRule: Codable, Equatable {
-    var frequency: RecurrenceFrequency
-    var interval: Int // every N weeks/months/etc.
-    var daysOfWeek: [Int]? // 1=Mon ... 7=Sun
-    var endDate: Date?
-    var count: Int? // or limit by count
+public struct RecurrenceRule: Codable, Equatable {
+    public var frequency: RecurrenceFrequency
+    public var interval: Int // every N weeks/months/etc.
+    public var daysOfWeek: [Int]? // 1=Mon ... 7=Sun
+    public var endDate: Date?
+    public var count: Int? // or limit by count
+
+    public init(frequency: RecurrenceFrequency, interval: Int, daysOfWeek: [Int]? = nil, endDate: Date? = nil, count: Int? = nil) {
+        self.frequency = frequency
+        self.interval = interval
+        self.daysOfWeek = daysOfWeek
+        self.endDate = endDate
+        self.count = count
+    }
 
     /// Preset: weekdays only (Mon-Fri)
-    static var weekdays: RecurrenceRule {
+    public static var weekdays: RecurrenceRule {
         RecurrenceRule(frequency: .weekly, interval: 1, daysOfWeek: [1, 2, 3, 4, 5])
     }
 
     /// Preset: weekends only (Sat-Sun)
-    static var weekends: RecurrenceRule {
+    public static var weekends: RecurrenceRule {
         RecurrenceRule(frequency: .weekly, interval: 1, daysOfWeek: [6, 7])
     }
 
     /// Preset: every week
-    static var everyWeek: RecurrenceRule {
+    public static var everyWeek: RecurrenceRule {
         RecurrenceRule(frequency: .weekly, interval: 1)
     }
 
     /// Preset: every month
-    static var everyMonth: RecurrenceRule {
+    public static var everyMonth: RecurrenceRule {
         RecurrenceRule(frequency: .monthly, interval: 1)
     }
 
     /// Preset: every year
-    static var everyYear: RecurrenceRule {
+    public static var everyYear: RecurrenceRule {
         RecurrenceRule(frequency: .yearly, interval: 1)
     }
 }

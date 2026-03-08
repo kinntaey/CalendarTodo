@@ -1,10 +1,10 @@
 import Foundation
 import Supabase
 
-final class SupabaseService {
-    static let shared = SupabaseService()
+public final class SupabaseService {
+    public static let shared = SupabaseService()
 
-    let client: SupabaseClient
+    public let client: SupabaseClient
 
     private init() {
         // TODO: Replace with your Supabase project credentials

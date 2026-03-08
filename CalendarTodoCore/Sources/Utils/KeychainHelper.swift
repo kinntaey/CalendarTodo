@@ -1,8 +1,9 @@
 import Foundation
 import Security
 
-enum KeychainHelper {
-    static func save(key: String, data: Data) -> Bool {
+public enum KeychainHelper {
+    @discardableResult
+    public static func save(key: String, data: Data) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,
@@ -15,7 +16,7 @@ enum KeychainHelper {
         return status == errSecSuccess
     }
 
-    static func load(key: String) -> Data? {
+    public static func load(key: String) -> Data? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,
@@ -30,7 +31,7 @@ enum KeychainHelper {
         return result as? Data
     }
 
-    static func delete(key: String) {
+    public static func delete(key: String) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,

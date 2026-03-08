@@ -2,44 +2,44 @@ import Foundation
 import SwiftData
 
 @Model
-final class LocalEvent {
-    @Attribute(.unique) var id: UUID
-    var ownerID: UUID
-    var title: String
-    var eventDescription: String?
-    var startAt: Date
-    var endAt: Date
-    var isAllDay: Bool
+public final class LocalEvent {
+    @Attribute(.unique) public var id: UUID
+    public var ownerID: UUID
+    public var title: String
+    public var eventDescription: String?
+    public var startAt: Date
+    public var endAt: Date
+    public var isAllDay: Bool
 
     // Location (Google Maps)
-    var locationName: String?
-    var locationAddress: String?
-    var locationLat: Double?
-    var locationLng: Double?
-    var locationPlaceID: String?
+    public var locationName: String?
+    public var locationAddress: String?
+    public var locationLat: Double?
+    public var locationLng: Double?
+    public var locationPlaceID: String?
 
     // Recurrence
-    var recurrenceRuleData: Data? // Encoded RecurrenceRule
-    var recurrenceParentID: UUID?
-    var recurrenceExceptionDates: [Date]?
+    public var recurrenceRuleData: Data? // Encoded RecurrenceRule
+    public var recurrenceParentID: UUID?
+    public var recurrenceExceptionDates: [Date]?
 
     // Alarms (minutes before event)
-    var alarms: [Int] // e.g. [10, 30, 60, 1440, 10080]
+    public var alarms: [Int] // e.g. [10, 30, 60, 1440, 10080]
 
     // Status
-    var status: String // active, cancelled
+    public var status: String // active, cancelled
 
     // Tags
-    var tags: [LocalTag]?
+    public var tags: [LocalTag]?
 
     // Sync
-    var syncVersion: Int64
-    var isDeleted: Bool
-    var syncStatus: String
-    var createdAt: Date
-    var updatedAt: Date
+    public var syncVersion: Int64
+    public var isDeleted: Bool
+    public var syncStatus: String
+    public var createdAt: Date
+    public var updatedAt: Date
 
-    init(
+    public init(
         id: UUID = UUID(),
         ownerID: UUID,
         title: String,
@@ -89,7 +89,7 @@ final class LocalEvent {
         self.updatedAt = updatedAt
     }
 
-    var recurrenceRule: RecurrenceRule? {
+    public var recurrenceRule: RecurrenceRule? {
         get {
             guard let data = recurrenceRuleData else { return nil }
             return try? JSONDecoder().decode(RecurrenceRule.self, from: data)

@@ -4,14 +4,14 @@ import Supabase
 
 @MainActor
 @Observable
-final class AuthService {
+public final class AuthService {
     private let supabase = SupabaseService.shared.client
 
-    var currentUser: User?
-    var isAuthenticated = false
-    var isLoading = false
+    public var currentUser: User?
+    public var isAuthenticated = false
+    public var isLoading = false
 
-    init() {
+    public init() {
         Task {
             await checkSession()
         }
@@ -19,7 +19,7 @@ final class AuthService {
 
     // MARK: - Session
 
-    func checkSession() async {
+    public func checkSession() async {
         do {
             let session = try await supabase.auth.session
             currentUser = session.user
@@ -32,7 +32,7 @@ final class AuthService {
 
     // MARK: - Apple Sign In
 
-    func signInWithApple(idToken: String, nonce: String) async throws {
+    public func signInWithApple(idToken: String, nonce: String) async throws {
         isLoading = true
         defer { isLoading = false }
 
@@ -49,7 +49,7 @@ final class AuthService {
 
     // MARK: - Google Sign In
 
-    func signInWithGoogle(idToken: String, accessToken: String) async throws {
+    public func signInWithGoogle(idToken: String, accessToken: String) async throws {
         isLoading = true
         defer { isLoading = false }
 
@@ -66,7 +66,7 @@ final class AuthService {
 
     // MARK: - Sign Out
 
-    func signOut() async throws {
+    public func signOut() async throws {
         try await supabase.auth.signOut()
         currentUser = nil
         isAuthenticated = false
@@ -74,7 +74,7 @@ final class AuthService {
 
     // MARK: - Profile
 
-    func createProfile(username: String, displayName: String) async throws {
+    public func createProfile(username: String, displayName: String) async throws {
         guard let userID = currentUser?.id else { return }
 
         struct ProfileInsert: Encodable {
@@ -93,7 +93,7 @@ final class AuthService {
             .execute()
     }
 
-    func fetchProfile() async throws -> ProfileResponse? {
+    public func fetchProfile() async throws -> ProfileResponse? {
         guard let userID = currentUser?.id else { return nil }
 
         return try await supabase
@@ -105,7 +105,7 @@ final class AuthService {
             .value
     }
 
-    func checkUsernameAvailable(_ username: String) async throws -> Bool {
+    public func checkUsernameAvailable(_ username: String) async throws -> Bool {
         let results: [ProfileResponse] = try await supabase
             .from("profiles")
             .select()
@@ -117,18 +117,27 @@ final class AuthService {
     }
 }
 
-struct ProfileResponse: Decodable {
-    let id: UUID
-    let username: String
-    let displayName: String
-    let avatarURL: String?
-    let timezone: String
-    let createdAt: Date
+public struct ProfileResponse: Decodable {
+    public let id: UUID
+    public let username: String
+    public let displayName: String
+    public let avatarURL: String?
+    public let timezone: String
+    public let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
         case id, username, timezone
         case displayName = "display_name"
         case avatarURL = "avatar_url"
         case createdAt = "created_at"
+    }
+
+    public init(id: UUID, username: String, displayName: String, avatarURL: String?, timezone: String, createdAt: Date) {
+        self.id = id
+        self.username = username
+        self.displayName = displayName
+        self.avatarURL = avatarURL
+        self.timezone = timezone
+        self.createdAt = createdAt
     }
 }

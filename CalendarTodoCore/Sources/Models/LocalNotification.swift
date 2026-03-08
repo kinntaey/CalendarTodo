@@ -2,23 +2,23 @@ import Foundation
 import SwiftData
 
 @Model
-final class LocalNotification {
-    @Attribute(.unique) var id: UUID
-    var recipientID: UUID
-    var senderID: UUID?
-    var type: String
+public final class LocalNotification {
+    @Attribute(.unique) public var id: UUID
+    public var recipientID: UUID
+    public var senderID: UUID?
+    public var type: String
     // friend_request, friend_accepted, event_invitation, event_response,
     // todo_assigned, todo_assignment_response, todo_list_invitation,
     // todo_list_response, todo_completed, event_alarm
 
-    var referenceType: String? // event, todo, todo_list, friendship
-    var referenceID: UUID?
-    var title: String
-    var body: String?
-    var isRead: Bool
-    var createdAt: Date
+    public var referenceType: String? // event, todo, todo_list, friendship
+    public var referenceID: UUID?
+    public var title: String
+    public var body: String?
+    public var isRead: Bool
+    public var createdAt: Date
 
-    init(
+    public init(
         id: UUID = UUID(),
         recipientID: UUID,
         senderID: UUID? = nil,

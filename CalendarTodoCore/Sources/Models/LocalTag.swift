@@ -2,19 +2,19 @@ import Foundation
 import SwiftData
 
 @Model
-final class LocalTag {
-    @Attribute(.unique) var id: UUID
-    var ownerID: UUID
-    var name: String
-    var color: String
-    var icon: String?
-    var createdAt: Date
-    var syncStatus: String
+public final class LocalTag {
+    @Attribute(.unique) public var id: UUID
+    public var ownerID: UUID
+    public var name: String
+    public var color: String
+    public var icon: String?
+    public var createdAt: Date
+    public var syncStatus: String
 
-    @Relationship(inverse: \LocalEvent.tags) var events: [LocalEvent]?
-    @Relationship(inverse: \LocalTodo.tags) var todos: [LocalTodo]?
+    @Relationship(inverse: \LocalEvent.tags) public var events: [LocalEvent]?
+    @Relationship(inverse: \LocalTodo.tags) public var todos: [LocalTodo]?
 
-    init(
+    public init(
         id: UUID = UUID(),
         ownerID: UUID,
         name: String,

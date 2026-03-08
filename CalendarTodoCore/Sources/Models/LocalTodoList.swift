@@ -2,24 +2,24 @@ import Foundation
 import SwiftData
 
 @Model
-final class LocalTodoList {
-    @Attribute(.unique) var id: UUID
-    var ownerID: UUID
-    var title: String
-    var listType: String // daily, weekly, custom
-    var weekStartDate: Date? // for weekly type
-    var isShared: Bool
+public final class LocalTodoList {
+    @Attribute(.unique) public var id: UUID
+    public var ownerID: UUID
+    public var title: String
+    public var listType: String // daily, weekly, custom
+    public var weekStartDate: Date? // for weekly type
+    public var isShared: Bool
 
-    @Relationship(deleteRule: .cascade) var todos: [LocalTodo]?
+    @Relationship(deleteRule: .cascade) public var todos: [LocalTodo]?
 
     // Sync
-    var syncVersion: Int64
-    var isDeleted: Bool
-    var syncStatus: String
-    var createdAt: Date
-    var updatedAt: Date
+    public var syncVersion: Int64
+    public var isDeleted: Bool
+    public var syncStatus: String
+    public var createdAt: Date
+    public var updatedAt: Date
 
-    init(
+    public init(
         id: UUID = UUID(),
         ownerID: UUID,
         title: String,

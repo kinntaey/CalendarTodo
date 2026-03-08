@@ -2,11 +2,11 @@ import Foundation
 import Network
 
 @Observable
-final class NetworkMonitor {
-    static let shared = NetworkMonitor()
+public final class NetworkMonitor {
+    public static let shared = NetworkMonitor()
 
-    var isConnected = true
-    var connectionType: NWInterface.InterfaceType?
+    public var isConnected = true
+    public var connectionType: NWInterface.InterfaceType?
 
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "NetworkMonitor")

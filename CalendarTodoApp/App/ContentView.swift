@@ -1,3 +1,4 @@
+import CalendarTodoCore
 import SwiftUI
 
 struct ContentView: View {
@@ -48,7 +49,7 @@ struct ContentView: View {
     private func tabContent(for tab: Tab) -> some View {
         switch tab {
         case .calendar:
-            CalendarPlaceholderView()
+            CalendarContainerView()
         case .dailyTodo:
             DailyTodoPlaceholderView()
         case .weeklyTodo:
@@ -62,15 +63,6 @@ struct ContentView: View {
 }
 
 // MARK: - Placeholder Views (to be replaced in Phase 2-5)
-
-private struct CalendarPlaceholderView: View {
-    var body: some View {
-        NavigationStack {
-            Text("캘린더 뷰 (Phase 2)")
-                .navigationTitle("캘린더")
-        }
-    }
-}
 
 private struct DailyTodoPlaceholderView: View {
     var body: some View {

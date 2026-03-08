@@ -1,3 +1,4 @@
+import CalendarTodoCore
 import SwiftUI
 import WidgetKit
 

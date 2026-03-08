@@ -2,41 +2,41 @@ import Foundation
 import SwiftData
 
 @Model
-final class LocalTodo {
-    @Attribute(.unique) var id: UUID
-    var todoListID: UUID?
-    var ownerID: UUID
-    var title: String
-    var todoDescription: String?
-    var isCompleted: Bool
-    var completedAt: Date?
-    var completedBy: UUID?
+public final class LocalTodo {
+    @Attribute(.unique) public var id: UUID
+    public var todoListID: UUID?
+    public var ownerID: UUID
+    public var title: String
+    public var todoDescription: String?
+    public var isCompleted: Bool
+    public var completedAt: Date?
+    public var completedBy: UUID?
 
     // Date assignment
-    var assignedDate: Date?
-    var dueDate: Date?
+    public var assignedDate: Date?
+    public var dueDate: Date?
 
-    var priority: Int // 0: none, 1: low, 2: medium, 3: high
-    var sortOrder: Int
+    public var priority: Int // 0: none, 1: low, 2: medium, 3: high
+    public var sortOrder: Int
 
     // Friend assignment
-    var assignedTo: UUID?
-    var assignmentStatus: String // none, pending, accepted, declined
+    public var assignedTo: UUID?
+    public var assignmentStatus: String // none, pending, accepted, declined
 
     // Tags
-    var tags: [LocalTag]?
+    public var tags: [LocalTag]?
 
     // Parent list
-    @Relationship var todoList: LocalTodoList?
+    @Relationship public var todoList: LocalTodoList?
 
     // Sync
-    var syncVersion: Int64
-    var isDeleted: Bool
-    var syncStatus: String
-    var createdAt: Date
-    var updatedAt: Date
+    public var syncVersion: Int64
+    public var isDeleted: Bool
+    public var syncStatus: String
+    public var createdAt: Date
+    public var updatedAt: Date
 
-    init(
+    public init(
         id: UUID = UUID(),
         todoListID: UUID? = nil,
         ownerID: UUID,

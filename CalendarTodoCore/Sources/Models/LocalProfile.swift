@@ -2,18 +2,18 @@ import Foundation
 import SwiftData
 
 @Model
-final class LocalProfile {
-    @Attribute(.unique) var id: UUID
-    @Attribute(.unique) var username: String
-    var displayName: String
-    var avatarURL: String?
-    var timezone: String
-    var apnsDeviceTokens: [String]
-    var createdAt: Date
-    var updatedAt: Date
-    var syncStatus: String // synced, pendingUpload, pendingDelete, conflict
+public final class LocalProfile {
+    @Attribute(.unique) public var id: UUID
+    @Attribute(.unique) public var username: String
+    public var displayName: String
+    public var avatarURL: String?
+    public var timezone: String
+    public var apnsDeviceTokens: [String]
+    public var createdAt: Date
+    public var updatedAt: Date
+    public var syncStatus: String // synced, pendingUpload, pendingDelete, conflict
 
-    init(
+    public init(
         id: UUID = UUID(),
         username: String,
         displayName: String,

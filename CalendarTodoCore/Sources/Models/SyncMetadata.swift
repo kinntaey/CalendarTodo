@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-enum SyncStatus: String, Codable {
+public enum SyncStatus: String, Codable {
     case synced
     case pendingUpload
     case pendingDelete
@@ -9,12 +9,12 @@ enum SyncStatus: String, Codable {
 }
 
 @Model
-final class SyncCursor {
-    @Attribute(.unique) var entityType: String // events, todos, todo_lists
-    var lastSyncVersion: Int64
-    var lastSyncedAt: Date
+public final class SyncCursor {
+    @Attribute(.unique) public var entityType: String // events, todos, todo_lists
+    public var lastSyncVersion: Int64
+    public var lastSyncedAt: Date
 
-    init(
+    public init(
         entityType: String,
         lastSyncVersion: Int64 = 0,
         lastSyncedAt: Date = .now

@@ -1,3 +1,4 @@
+import CalendarTodoCore
 import SwiftUI
 
 struct ProfileSetupView: View {
@@ -27,7 +28,9 @@ struct ProfileSetupView: View {
                             Text("@")
                                 .foregroundStyle(.secondary)
                             TextField("username", text: $username)
+                                #if !os(macOS)
                                 .textInputAutocapitalization(.never)
+                                #endif
                                 .autocorrectionDisabled()
                                 .onChange(of: username) { _, newValue in
                                     // Sanitize: only allow lowercase, numbers, underscore
