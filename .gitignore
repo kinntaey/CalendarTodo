@@ -39,3 +39,6 @@ supabase/.temp/
 
 # APNs secrets
 Supabase/secrets/
+
+# Supabase credentials
+SupabaseSecrets.swift

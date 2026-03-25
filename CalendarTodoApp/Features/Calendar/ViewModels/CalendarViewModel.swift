@@ -99,10 +99,14 @@ final class CalendarViewModel {
         }
     }
 
+    private static let holidayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
     func isHoliday(_ date: Date) -> Bool {
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd"
-        return holidayDates.contains(df.string(from: date))
+        holidayDates.contains(Self.holidayFormatter.string(from: date))
     }
 
     func enableAppleCalendar() {

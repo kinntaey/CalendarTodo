@@ -103,11 +103,11 @@ final class EventViewModel {
 
     func save(ownerID: UUID) -> Bool {
         guard !title.trimmingCharacters(in: .whitespaces).isEmpty else {
-            errorMessage = "제목을 입력해주세요."
+            errorMessage = L10n.titleRequired
             return false
         }
         guard endDate > startDate else {
-            errorMessage = "종료 시간이 시작 시간보다 이후여야 합니다."
+            errorMessage = L10n.endAfterStart
             return false
         }
 
@@ -147,8 +147,6 @@ final class EventViewModel {
                     await notifyParticipantsOfChange(
                         eventTitle: title,
                         ownerID: ownerID,
-                        timeChanged: timeChanged,
-                        locationChanged: locationChanged,
                         newStart: startDate,
                         newEnd: endDate,
                         newLocation: locationName
@@ -249,17 +247,16 @@ final class EventViewModel {
                 friendIDs: invitedFriendIDs
             )
 
-            print("[Event] Invitations sent to \(invitedFriendIDs.count) friends")
         } catch {
+            #if DEBUG
             print("[Event] Invitation error: \(error)")
+            #endif
         }
     }
 
     private func notifyParticipantsOfChange(
         eventTitle: String,
         ownerID: UUID,
-        timeChanged: Bool,
-        locationChanged: Bool,
         newStart: Date,
         newEnd: Date,
         newLocation: String
@@ -268,28 +265,40 @@ final class EventViewModel {
             let supabase = SupabaseService.shared.client
             let ownerStr = ownerID.uuidString.lowercased()
 
-            // Supabase에서 이벤트 업데이트
             struct EventUpdate: Encodable {
-                let title: String
                 let start_at: Date
                 let end_at: Date
                 let location_name: String?
             }
 
-            try await supabase
+            let updatePayload = EventUpdate(
+                start_at: newStart,
+                end_at: newEnd,
+                location_name: newLocation.isEmpty ? nil : newLocation
+            )
+
+            // Find the event by owner + title on Supabase to get the remote ID
+            struct SimpleEvent: Decodable { let id: UUID }
+            let events: [SimpleEvent] = try await supabase
                 .from("events")
-                .update(EventUpdate(
-                    title: eventTitle,
-                    start_at: newStart,
-                    end_at: newEnd,
-                    location_name: newLocation.isEmpty ? nil : newLocation
-                ))
+                .select("id")
                 .eq("owner_id", value: ownerStr)
                 .eq("title", value: eventTitle)
+                .limit(1)
+                .execute()
+                .value
+
+            guard let remoteEventID = events.first?.id else { return }
+
+            // Update by ID
+            try await supabase
+                .from("events")
+                .update(updatePayload)
+                .eq("id", value: remoteEventID.uuidString.lowercased())
                 .execute()
 
-            // 참가자 목록 가져오기
-            let participants = try await EventParticipantService().fetchParticipantsForTitle(eventTitle)
+            // Fetch participants by event ID (not title)
+            let participants = try await EventParticipantService().fetchParticipantsForEvent(remoteEventID)
 
             let ownerProfile: ProfileResponse = try await supabase
                 .from("profiles")
@@ -299,17 +308,10 @@ final class EventViewModel {
                 .execute()
                 .value
 
-            // 변경 내용 메시지 생성
+            // Build change message
             let formatter = DateFormatter()
             formatter.setLocalizedDateFormatFromTemplate("MMMd HH:mm")
-            var changeMsg = "'\(eventTitle)' "
-            if timeChanged {
-                changeMsg += formatter.string(from: newStart)
-            }
-            if locationChanged && !newLocation.isEmpty {
-                if timeChanged { changeMsg += ", " }
-                changeMsg += newLocation
-            }
+            let changeMsg = "'\(eventTitle)' \(formatter.string(from: newStart))"
 
             struct PushPayload: Encodable {
                 let recipient_id: String
@@ -318,20 +320,6 @@ final class EventViewModel {
             }
 
             for p in participants where p.status != "owner" && p.profile.id != ownerID {
-                // 참여자의 복제된 이벤트도 업데이트
-                try? await supabase
-                    .from("events")
-                    .update(EventUpdate(
-                        title: eventTitle,
-                        start_at: newStart,
-                        end_at: newEnd,
-                        location_name: newLocation.isEmpty ? nil : newLocation
-                    ))
-                    .eq("owner_id", value: p.profile.id.uuidString.lowercased())
-                    .eq("title", value: eventTitle)
-                    .execute()
-
-                // 푸시 알림
                 try? await supabase.functions.invoke(
                     "send-push-notification",
                     options: .init(body: PushPayload(
@@ -341,10 +329,10 @@ final class EventViewModel {
                     ))
                 )
             }
-
-            print("[Event] Updated & notified \(participants.count - 1) participants")
         } catch {
+            #if DEBUG
             print("[Event] Notify change error: \(error)")
+            #endif
         }
     }
 

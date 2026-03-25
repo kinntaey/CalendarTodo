@@ -139,6 +139,17 @@ CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (true);
 CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (auth.uid() = id);
 
+-- Secure function to read device tokens (only service_role or self)
+CREATE OR REPLACE FUNCTION get_device_tokens(p_user_id UUID)
+RETURNS TEXT[] AS $$
+BEGIN
+    IF auth.uid() != p_user_id THEN
+        RAISE EXCEPTION 'Unauthorized';
+    END IF;
+    RETURN (SELECT apns_device_tokens FROM profiles WHERE id = p_user_id);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 ALTER TABLE friendships ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "friendships_select" ON friendships FOR SELECT
     USING (auth.uid() = requester_id OR auth.uid() = addressee_id);
@@ -180,6 +191,17 @@ CREATE POLICY "tl_select" ON todo_lists FOR SELECT
             SELECT 1 FROM todo_list_members
             WHERE todo_list_id = todo_lists.id AND user_id = auth.uid() AND status = 'accepted'
         )
+        OR (
+            is_shared = true
+            AND EXISTS (
+                SELECT 1 FROM friendships
+                WHERE status = 'accepted'
+                AND (
+                    (requester_id = auth.uid() AND addressee_id = todo_lists.owner_id)
+                    OR (addressee_id = auth.uid() AND requester_id = todo_lists.owner_id)
+                )
+            )
+        )
     );
 CREATE POLICY "tl_insert" ON todo_lists FOR INSERT WITH CHECK (auth.uid() = owner_id);
 CREATE POLICY "tl_update" ON todo_lists FOR UPDATE USING (auth.uid() = owner_id);
@@ -204,6 +226,18 @@ CREATE POLICY "todos_select" ON todos FOR SELECT
             SELECT 1 FROM todo_list_members
             WHERE todo_list_id = todos.todo_list_id AND user_id = auth.uid() AND status = 'accepted'
         )
+        OR EXISTS (
+            SELECT 1 FROM todo_lists tl
+            WHERE tl.id = todos.todo_list_id AND tl.is_shared = true
+            AND EXISTS (
+                SELECT 1 FROM friendships
+                WHERE status = 'accepted'
+                AND (
+                    (requester_id = auth.uid() AND addressee_id = tl.owner_id)
+                    OR (addressee_id = auth.uid() AND requester_id = tl.owner_id)
+                )
+            )
+        )
     );
 CREATE POLICY "todos_insert" ON todos FOR INSERT WITH CHECK (auth.uid() = owner_id);
 CREATE POLICY "todos_update" ON todos FOR UPDATE
@@ -223,6 +257,8 @@ CREATE POLICY "notif_select" ON notifications FOR SELECT
 CREATE POLICY "notif_insert" ON notifications FOR INSERT
     WITH CHECK (auth.uid() = sender_id OR sender_id IS NULL);
 CREATE POLICY "notif_update" ON notifications FOR UPDATE
+    USING (auth.uid() = recipient_id);
+CREATE POLICY "notif_delete" ON notifications FOR DELETE
     USING (auth.uid() = recipient_id);
 
 -- ============================================
@@ -248,13 +284,26 @@ CREATE TRIGGER tr_friendships_no_reverse
     BEFORE INSERT ON friendships
     FOR EACH ROW EXECUTE FUNCTION check_friendship_no_reverse();
 
--- Clone event for invitation accept
+-- Clone event for invitation accept (with authorization check)
 CREATE OR REPLACE FUNCTION clone_event_for_participant(p_event_id UUID, p_user_id UUID)
 RETURNS UUID AS $$
 DECLARE
     v_new_id UUID := gen_random_uuid();
     v_src events%ROWTYPE;
 BEGIN
+    -- Authorization: caller must be the target user
+    IF auth.uid() != p_user_id THEN
+        RAISE EXCEPTION 'Unauthorized: can only clone for yourself';
+    END IF;
+
+    -- Verify user is a pending participant
+    IF NOT EXISTS (
+        SELECT 1 FROM event_participants
+        WHERE event_id = p_event_id AND user_id = p_user_id AND status IN ('pending', 'accepted')
+    ) THEN
+        RAISE EXCEPTION 'Not a participant of this event';
+    END IF;
+
     SELECT * INTO v_src FROM events WHERE id = p_event_id;
     IF NOT FOUND THEN RAISE EXCEPTION 'Event not found'; END IF;
 
@@ -270,13 +319,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Clone todo for assignment accept
+-- Clone todo for assignment accept (with authorization check)
 CREATE OR REPLACE FUNCTION clone_todo_for_assignee(p_todo_id UUID, p_user_id UUID)
 RETURNS UUID AS $$
 DECLARE
     v_new_id UUID := gen_random_uuid();
     v_src todos%ROWTYPE;
 BEGIN
+    -- Authorization: caller must be the target user
+    IF auth.uid() != p_user_id THEN
+        RAISE EXCEPTION 'Unauthorized: can only clone for yourself';
+    END IF;
+
+    -- Verify user is the assigned recipient
+    IF NOT EXISTS (
+        SELECT 1 FROM todos
+        WHERE id = p_todo_id AND assigned_to = p_user_id AND assignment_status = 'pending'
+    ) THEN
+        RAISE EXCEPTION 'Not assigned to this todo';
+    END IF;
+
     SELECT * INTO v_src FROM todos WHERE id = p_todo_id;
     IF NOT FOUND THEN RAISE EXCEPTION 'Todo not found'; END IF;
 
@@ -287,6 +349,10 @@ BEGIN
     RETURN v_new_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Username format constraint
+ALTER TABLE profiles ADD CONSTRAINT IF NOT EXISTS check_username_format
+    CHECK (username ~ '^[a-z0-9_]{3,20}$');
 
 -- ============================================
 -- Realtime

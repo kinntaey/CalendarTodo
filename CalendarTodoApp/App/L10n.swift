@@ -35,6 +35,8 @@ enum L10n {
     static var today: String { tr("오늘", "Today", "今日", "今天") }
     static var select: String { tr("선택", "Select", "選択", "选择") }
     static var systemDefault: String { tr("시스템 기본", "System Default", "システムデフォルト", "系统默认") }
+    static var titleRequired: String { tr("제목을 입력해주세요.", "Please enter a title.", "タイトルを入力してください。", "请输入标题。") }
+    static var endAfterStart: String { tr("종료 시간이 시작 시간보다 이후여야 합니다.", "End time must be after start time.", "終了時刻は開始時刻より後でなければなりません。", "结束时间必须在开始时间之后。") }
     static var next: String { tr("다음", "Next", "次へ", "下一步") }
     static var getStarted: String { tr("시작하기", "Get Started", "始める", "开始") }
 

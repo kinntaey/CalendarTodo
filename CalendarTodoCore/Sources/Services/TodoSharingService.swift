@@ -134,33 +134,38 @@ public final class TodoSharingService {
     // MARK: - Fetch All Friends' Public Lists
 
     public func fetchAllFriendsPublicLists(friendIDs: [UUID]) async throws -> [FriendTodoLists] {
-        var result: [FriendTodoLists] = []
+        guard !friendIDs.isEmpty else { return [] }
 
-        for friendID in friendIDs {
-            let profile: ProfileResponse = try await supabase
-                .from("profiles")
-                .select()
-                .eq("id", value: friendID)
-                .single()
-                .execute()
-                .value
+        let friendIDStrings = friendIDs.map { $0.uuidString.lowercased() }
 
-            let lists: [RemoteTodoList] = try await supabase
-                .from("todo_lists")
-                .select("id, title, is_shared, created_at")
-                .eq("owner_id", value: friendID)
-                .eq("is_deleted", value: false)
-                .eq("list_type", value: "custom")
-                .eq("is_shared", value: true)
-                .execute()
-                .value
+        // Batch fetch profiles
+        let profiles: [ProfileResponse] = try await supabase
+            .from("profiles")
+            .select()
+            .in("id", values: friendIDStrings)
+            .execute()
+            .value
+        let profileMap = Dictionary(uniqueKeysWithValues: profiles.map { ($0.id, $0) })
 
-            if !lists.isEmpty {
-                result.append(FriendTodoLists(profile: profile, lists: lists))
-            }
+        // Batch fetch all shared lists
+        let lists: [RemoteTodoListWithOwner] = try await supabase
+            .from("todo_lists")
+            .select("id, title, is_shared, created_at, owner_id")
+            .in("owner_id", values: friendIDStrings)
+            .eq("is_deleted", value: false)
+            .eq("list_type", value: "custom")
+            .eq("is_shared", value: true)
+            .execute()
+            .value
+
+        // Group by owner
+        let grouped = Dictionary(grouping: lists) { $0.owner_id }
+
+        return grouped.compactMap { ownerID, ownerLists in
+            guard let profile = profileMap[ownerID] else { return nil }
+            let remoteLists = ownerLists.map { RemoteTodoList(id: $0.id, title: $0.title, is_shared: $0.is_shared, created_at: $0.created_at) }
+            return FriendTodoLists(profile: profile, lists: remoteLists)
         }
-
-        return result
     }
 
     // MARK: - Fetch Todos in a List
@@ -231,4 +236,12 @@ public struct PendingAssignment: Identifiable {
     public let title: String
     public let assigner: ProfileResponse
     public var id: UUID { todoID }
+}
+
+struct RemoteTodoListWithOwner: Decodable {
+    let id: UUID
+    let title: String
+    let is_shared: Bool
+    let created_at: Date
+    let owner_id: UUID
 }

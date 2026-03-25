@@ -11,10 +11,10 @@ const APNS_KEY_ID = Deno.env.get("APNS_KEY_ID")!;
 const APNS_TEAM_ID = Deno.env.get("APNS_TEAM_ID")!;
 const APNS_PRIVATE_KEY = Deno.env.get("APNS_PRIVATE_KEY")!;
 const BUNDLE_ID = "com.taehee.calendartodo";
-const APNS_HOST = "api.sandbox.push.apple.com"; // Change to api.push.apple.com for production
+const APNS_HOST = Deno.env.get("APNS_HOST") || "api.push.apple.com";
 
 interface PushPayload {
-  recipient_id: string
+  recipient_id: string;
   title: string;
   body: string;
   data?: Record<string, string>;
@@ -61,7 +61,7 @@ async function sendToDevice(
 
     if (!res.ok) {
       const err = await res.text();
-      console.error(`APNs error [${token}]: ${res.status} ${err}`);
+      console.error(`APNs error: ${res.status}`);
       return false;
     }
     return true;
@@ -73,10 +73,29 @@ async function sendToDevice(
 
 Deno.serve(async (req: Request) => {
   try {
-    const payload: PushPayload = await req.json();
-    console.log("Received push request:", JSON.stringify(payload));
+    // Verify caller is authenticated
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-    // Fetch device tokens
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const payload: PushPayload = await req.json();
+
+    // Fetch device tokens using service role (bypasses RLS)
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("apns_device_tokens")
@@ -84,31 +103,26 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (profileError) {
-      console.error("Profile fetch error:", profileError);
+      console.error("Profile fetch error:", profileError.message);
     }
 
     const tokens: string[] = profile?.apns_device_tokens ?? [];
-    console.log(`Found ${tokens.length} device tokens for ${payload.recipient_id}`);
 
     // Send push to all devices
     let sent = 0;
     if (tokens.length > 0) {
       const results = await Promise.all(
-        tokens.map((t) => {
-          console.log(`Sending to token: ${t.substring(0, 10)}...`);
-          return sendToDevice(t, payload.title, payload.body || "", payload.data || {});
-        })
+        tokens.map((t) =>
+          sendToDevice(t, payload.title, payload.body || "", payload.data || {})
+        )
       );
       sent = results.filter(Boolean).length;
-      console.log(`Sent: ${sent}/${tokens.length}`);
-    } else {
-      console.log("No tokens to send to");
     }
 
-    return new Response(
-      JSON.stringify({ sent, total: tokens.length }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ sent, total: tokens.length }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
   }

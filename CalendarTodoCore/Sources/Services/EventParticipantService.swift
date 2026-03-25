@@ -120,7 +120,6 @@ public final class EventParticipantService {
                 .execute()
 
             // Clone event
-            print("[EventParticipant] Cloning event \(participant.event_id) for user \(participant.user_id)")
             let response = try await supabase
                 .rpc("clone_event_for_participant", params: [
                     "p_event_id": participant.event_id.uuidString.lowercased(),
@@ -128,8 +127,7 @@ public final class EventParticipantService {
                 ])
                 .execute()
 
-            let responseStr = String(data: response.data, encoding: .utf8) ?? "nil"
-            print("[EventParticipant] Clone response: \(responseStr)")
+            let responseStr = String(data: response.data, encoding: .utf8) ?? ""
 
             // Parse UUID from response (could be raw string or JSON)
             if let clonedID = UUID(uuidString: responseStr.trimmingCharacters(in: CharacterSet(charactersIn: "\""))) {
@@ -184,29 +182,17 @@ public final class EventParticipantService {
         }
     }
 
-    // MARK: - Fetch Participants by Event Title
+    // MARK: - Fetch Participants by Event ID
 
-    public func fetchParticipantsForTitle(_ title: String) async throws -> [ParticipantWithProfile] {
-        let currentUserID = try await supabase.auth.session.user.id
-        let userIDStr = currentUserID.uuidString.lowercased()
+    public func fetchParticipantsForEvent(_ eventID: UUID) async throws -> [ParticipantWithProfile] {
+        let eventIDStr = eventID.uuidString.lowercased()
 
-        // Find the event on Supabase (as owner or participant)
-        struct SimpleEvent: Decodable { let id: UUID }
-        let events: [SimpleEvent] = try await supabase
-            .from("events")
-            .select("id")
-            .eq("title", value: title)
-            .execute()
-            .value
-
-        guard let eventID = events.first?.id else { return [] }
-
-        // Also add the event owner as a "participant" for display
+        // Get event owner
         struct EventOwner: Decodable { let owner_id: UUID }
         let ownerRow: EventOwner = try await supabase
             .from("events")
             .select("owner_id")
-            .eq("id", value: eventID.uuidString.lowercased())
+            .eq("id", value: eventIDStr)
             .single()
             .execute()
             .value
@@ -220,42 +206,45 @@ public final class EventParticipantService {
         let rows: [SimpleParticipant] = try await supabase
             .from("event_participants")
             .select("id, user_id, status")
-            .eq("event_id", value: eventID.uuidString.lowercased())
+            .eq("event_id", value: eventIDStr)
             .execute()
             .value
+
+        // Batch fetch all profiles
+        var allIDs = rows.map { $0.user_id.uuidString.lowercased() }
+        allIDs.append(ownerRow.owner_id.uuidString.lowercased())
+
+        let profiles: [ProfileResponse] = try await supabase
+            .from("profiles")
+            .select()
+            .in("id", values: allIDs)
+            .execute()
+            .value
+
+        let profileMap = Dictionary(uniqueKeysWithValues: profiles.map { ($0.id, $0) })
 
         var results: [ParticipantWithProfile] = []
 
         // Add event owner first
-        let ownerProfile: ProfileResponse = try await supabase
-            .from("profiles")
-            .select()
-            .eq("id", value: ownerRow.owner_id.uuidString.lowercased())
-            .single()
-            .execute()
-            .value
-        results.append(ParticipantWithProfile(
-            participantID: UUID(),
-            eventID: eventID,
-            status: "owner",
-            profile: ownerProfile
-        ))
+        if let ownerProfile = profileMap[ownerRow.owner_id] {
+            results.append(ParticipantWithProfile(
+                participantID: UUID(),
+                eventID: eventID,
+                status: "owner",
+                profile: ownerProfile
+            ))
+        }
 
         // Add invited participants
         for row in rows {
-            let profile: ProfileResponse = try await supabase
-                .from("profiles")
-                .select()
-                .eq("id", value: row.user_id.uuidString.lowercased())
-                .single()
-                .execute()
-                .value
-            results.append(ParticipantWithProfile(
-                participantID: row.id,
-                eventID: eventID,
-                status: row.status,
-                profile: profile
-            ))
+            if let profile = profileMap[row.user_id] {
+                results.append(ParticipantWithProfile(
+                    participantID: row.id,
+                    eventID: eventID,
+                    status: row.status,
+                    profile: profile
+                ))
+            }
         }
         return results
     }
@@ -280,34 +269,33 @@ public final class EventParticipantService {
             .execute()
             .value
 
-        print("[EventParticipant] Pending invitations found: \(rows.count)")
+        guard !rows.isEmpty else { return [] }
 
-        var results: [EventInvitation] = []
-        for row in rows {
-            let event: EventResponse = try await supabase
-                .from("events")
-                .select("id, title, description, start_at, end_at, is_all_day, location_name, color")
-                .eq("id", value: row.event_id.uuidString.lowercased())
-                .single()
-                .execute()
-                .value
+        // Batch fetch events
+        let eventIDs = rows.map { $0.event_id.uuidString.lowercased() }
+        let events: [EventResponse] = try await supabase
+            .from("events")
+            .select("id, title, description, start_at, end_at, is_all_day, location_name, color")
+            .in("id", values: eventIDs)
+            .execute()
+            .value
+        let eventMap = Dictionary(uniqueKeysWithValues: events.map { ($0.id, $0) })
 
-            let inviter: ProfileResponse = try await supabase
-                .from("profiles")
-                .select()
-                .eq("id", value: row.invited_by.uuidString.lowercased())
-                .single()
-                .execute()
-                .value
+        // Batch fetch inviters
+        let inviterIDs = Array(Set(rows.map { $0.invited_by.uuidString.lowercased() }))
+        let inviters: [ProfileResponse] = try await supabase
+            .from("profiles")
+            .select()
+            .in("id", values: inviterIDs)
+            .execute()
+            .value
+        let inviterMap = Dictionary(uniqueKeysWithValues: inviters.map { ($0.id, $0) })
 
-            results.append(EventInvitation(
-                participantID: row.id,
-                event: event,
-                inviter: inviter
-            ))
+        return rows.compactMap { row in
+            guard let event = eventMap[row.event_id],
+                  let inviter = inviterMap[row.invited_by] else { return nil }
+            return EventInvitation(participantID: row.id, event: event, inviter: inviter)
         }
-
-        return results
     }
 }
 

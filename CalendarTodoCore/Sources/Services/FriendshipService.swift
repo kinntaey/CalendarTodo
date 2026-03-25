@@ -10,13 +10,23 @@ public final class FriendshipService {
     // MARK: - Search Users
 
     public func searchUsers(query: String) async throws -> [ProfileResponse] {
-        try await supabase
+        // Escape ILIKE special characters
+        let escaped = query
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
+
+        let results: [ProfileSearchResult] = try await supabase
             .from("profiles")
-            .select()
-            .ilike("username", pattern: "%\(query)%")
+            .select("id, username, display_name, avatar_url, timezone, created_at")
+            .ilike("username", pattern: "%\(escaped)%")
             .limit(20)
             .execute()
             .value
+
+        return results.map {
+            ProfileResponse(id: $0.id, username: $0.username, displayName: $0.display_name ?? $0.username,
+                          avatarURL: $0.avatar_url, timezone: $0.timezone, createdAt: $0.created_at)
+        }
     }
 
     // MARK: - Friend Requests
@@ -25,23 +35,16 @@ public final class FriendshipService {
         let currentUserID = try await supabase.auth.session.user.id
         let requesterStr = currentUserID.uuidString.lowercased()
         let addresseeStr = addresseeID.uuidString.lowercased()
-        print("[Friendship] Sending request from \(requesterStr) to \(addresseeStr)")
 
         struct FriendshipInsert: Encodable {
             let requester_id: String
             let addressee_id: String
         }
 
-        do {
-            try await supabase
-                .from("friendships")
-                .insert(FriendshipInsert(requester_id: requesterStr, addressee_id: addresseeStr))
-                .execute()
-            print("[Friendship] Insert success")
-        } catch {
-            print("[Friendship] Insert ERROR: \(error)")
-            throw error
-        }
+        try await supabase
+            .from("friendships")
+            .insert(FriendshipInsert(requester_id: requesterStr, addressee_id: addresseeStr))
+            .execute()
 
         // Create notification
         let senderProfile: ProfileResponse = try await supabase
@@ -75,7 +78,7 @@ public final class FriendshipService {
             ))
             .execute()
 
-        // 푸시 알림 전송
+        // Push notification
         struct PushPayload: Encodable {
             let recipient_id: String
             let title: String
@@ -97,16 +100,12 @@ public final class FriendshipService {
             let status: String
         }
 
-        let idStr = friendshipID.uuidString.lowercased()
-        print("[Friendship] Accepting request: \(idStr)")
-        let response = try await supabase
+        try await supabase
             .from("friendships")
             .update(StatusUpdate(status: "accepted"))
-            .eq("id", value: idStr)
+            .eq("id", value: friendshipID.uuidString.lowercased())
             .select()
             .execute()
-
-        print("[Friendship] Accept response: \(String(data: response.data, encoding: .utf8) ?? "nil")")
     }
 
     public func declineFriendRequest(_ friendshipID: UUID) async throws {
@@ -138,12 +137,11 @@ public final class FriendshipService {
             .execute()
     }
 
-    // MARK: - Fetch Friends
+    // MARK: - Fetch Friends (batch profile fetch)
 
     public func fetchFriends() async throws -> [FriendshipWithProfile] {
         let currentUserID = try await supabase.auth.session.user.id
         let userIDStr = currentUserID.uuidString.lowercased()
-        print("[Friendship] Fetching friends for user: \(userIDStr)")
 
         struct SimpleFriendship: Decodable {
             let id: UUID
@@ -152,7 +150,6 @@ public final class FriendshipService {
             let status: String
         }
 
-        // Fetch all accepted friendships
         let all: [SimpleFriendship] = try await supabase
             .from("friendships")
             .select("id, requester_id, addressee_id, status")
@@ -161,27 +158,29 @@ public final class FriendshipService {
             .execute()
             .value
 
-        print("[Friendship] Accepted friendships found: \(all.count)")
+        guard !all.isEmpty else { return [] }
 
-        // Get the friend's profile for each
-        var results: [FriendshipWithProfile] = []
-        for row in all {
+        // Batch fetch all friend profiles
+        let friendIDs = all.map { $0.requester_id == currentUserID ? $0.addressee_id : $0.requester_id }
+        let friendIDStrings = friendIDs.map { $0.uuidString.lowercased() }
+
+        let profiles: [ProfileResponse] = try await supabase
+            .from("profiles")
+            .select()
+            .in("id", values: friendIDStrings)
+            .execute()
+            .value
+
+        let profileMap = Dictionary(uniqueKeysWithValues: profiles.map { ($0.id, $0) })
+
+        return all.compactMap { row in
             let friendID = row.requester_id == currentUserID ? row.addressee_id : row.requester_id
-            let profile: ProfileResponse = try await supabase
-                .from("profiles")
-                .select()
-                .eq("id", value: friendID.uuidString.lowercased())
-                .single()
-                .execute()
-                .value
-            results.append(FriendshipWithProfile(friendshipID: row.id, profile: profile))
+            guard let profile = profileMap[friendID] else { return nil }
+            return FriendshipWithProfile(friendshipID: row.id, profile: profile)
         }
-
-        print("[Friendship] Total friends: \(results.count)")
-        return results
     }
 
-    // MARK: - Fetch Sent Requests (outgoing pending)
+    // MARK: - Fetch Sent Requests (batch)
 
     public func fetchSentRequests() async throws -> [FriendshipWithProfile] {
         let currentUserID = try await supabase.auth.session.user.id
@@ -200,21 +199,25 @@ public final class FriendshipService {
             .execute()
             .value
 
-        var results: [FriendshipWithProfile] = []
-        for row in rows {
-            let profile: ProfileResponse = try await supabase
-                .from("profiles")
-                .select()
-                .eq("id", value: row.addressee_id.uuidString.lowercased())
-                .single()
-                .execute()
-                .value
-            results.append(FriendshipWithProfile(friendshipID: row.id, profile: profile))
+        guard !rows.isEmpty else { return [] }
+
+        let ids = rows.map { $0.addressee_id.uuidString.lowercased() }
+        let profiles: [ProfileResponse] = try await supabase
+            .from("profiles")
+            .select()
+            .in("id", values: ids)
+            .execute()
+            .value
+
+        let profileMap = Dictionary(uniqueKeysWithValues: profiles.map { ($0.id, $0) })
+
+        return rows.compactMap { row in
+            guard let profile = profileMap[row.addressee_id] else { return nil }
+            return FriendshipWithProfile(friendshipID: row.id, profile: profile)
         }
-        return results
     }
 
-    // MARK: - Fetch Pending Requests (incoming)
+    // MARK: - Fetch Pending Requests (batch)
 
     public func fetchPendingRequests() async throws -> [FriendshipWithProfile] {
         let currentUserID = try await supabase.auth.session.user.id
@@ -233,18 +236,22 @@ public final class FriendshipService {
             .execute()
             .value
 
-        var results: [FriendshipWithProfile] = []
-        for row in rows {
-            let profile: ProfileResponse = try await supabase
-                .from("profiles")
-                .select()
-                .eq("id", value: row.requester_id.uuidString.lowercased())
-                .single()
-                .execute()
-                .value
-            results.append(FriendshipWithProfile(friendshipID: row.id, profile: profile))
+        guard !rows.isEmpty else { return [] }
+
+        let ids = rows.map { $0.requester_id.uuidString.lowercased() }
+        let profiles: [ProfileResponse] = try await supabase
+            .from("profiles")
+            .select()
+            .in("id", values: ids)
+            .execute()
+            .value
+
+        let profileMap = Dictionary(uniqueKeysWithValues: profiles.map { ($0.id, $0) })
+
+        return rows.compactMap { row in
+            guard let profile = profileMap[row.requester_id] else { return nil }
+            return FriendshipWithProfile(friendshipID: row.id, profile: profile)
         }
-        return results
     }
 
     // MARK: - Check existing friendship
@@ -283,4 +290,17 @@ public struct FriendshipWithProfile: Identifiable {
 struct FriendshipStatusRow: Decodable {
     let id: UUID
     let status: String
+}
+
+private struct ProfileSearchResult: Decodable {
+    let id: UUID
+    let username: String
+    let display_name: String?
+    let avatar_url: String?
+    let timezone: String
+    let created_at: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, username, display_name, avatar_url, timezone, created_at
+    }
 }

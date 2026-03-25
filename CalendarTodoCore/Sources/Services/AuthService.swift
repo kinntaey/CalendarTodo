@@ -24,11 +24,9 @@ public final class AuthService {
             let session = try await supabase.auth.session
             currentUser = session.user
             isAuthenticated = true
-            print("[Auth] Session restored. User ID: \(session.user.id)")
         } catch {
             currentUser = nil
             isAuthenticated = false
-            print("[Auth] No session: \(error.localizedDescription)")
         }
     }
 
@@ -38,7 +36,6 @@ public final class AuthService {
         isLoading = true
         defer { isLoading = false }
 
-        print("[Auth] Attempting Apple sign in...")
         let session = try await supabase.auth.signInWithIdToken(
             credentials: .init(
                 provider: .apple,
@@ -48,7 +45,6 @@ public final class AuthService {
         )
         currentUser = session.user
         isAuthenticated = true
-        print("[Auth] Apple sign in success. User ID: \(session.user.id)")
     }
 
     // MARK: - Google Sign In
@@ -74,14 +70,12 @@ public final class AuthService {
         isLoading = true
         defer { isLoading = false }
 
-        print("[Auth] Attempting email sign up...")
         let response = try await supabase.auth.signUp(
             email: email,
             password: password
         )
         currentUser = response.user
         isAuthenticated = true
-        print("[Auth] Email sign up success. User ID: \(response.user.id)")
     }
 
     // MARK: - Email Sign In
@@ -90,14 +84,12 @@ public final class AuthService {
         isLoading = true
         defer { isLoading = false }
 
-        print("[Auth] Attempting email sign in...")
         let session = try await supabase.auth.signIn(
             email: email,
             password: password
         )
         currentUser = session.user
         isAuthenticated = true
-        print("[Auth] Email sign in success. User ID: \(session.user.id)")
     }
 
     // MARK: - Sign Out

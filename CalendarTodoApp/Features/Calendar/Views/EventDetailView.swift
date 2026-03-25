@@ -153,9 +153,21 @@ struct EventDetailView: View {
         }
         .task {
             do {
-                // Try to fetch participants from Supabase using event title
-                // (since local events don't have Supabase IDs mapped yet)
-                participants = try await EventParticipantService().fetchParticipantsForTitle(event.title)
+                // Find Supabase event by owner + title, then fetch participants by ID
+                let supabase = SupabaseService.shared.client
+                let ownerStr = event.ownerID.uuidString.lowercased()
+                struct SimpleEvent: Decodable { let id: UUID }
+                let events: [SimpleEvent] = try await supabase
+                    .from("events")
+                    .select("id")
+                    .eq("owner_id", value: ownerStr)
+                    .eq("title", value: event.title)
+                    .limit(1)
+                    .execute()
+                    .value
+                if let remoteID = events.first?.id {
+                    participants = try await EventParticipantService().fetchParticipantsForEvent(remoteID)
+                }
             } catch {}
         }
         .toolbar {

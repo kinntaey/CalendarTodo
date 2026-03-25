@@ -647,6 +647,12 @@ private struct CategoryGroupView: View {
         onTodosChanged()
     }
 
+    private static let dateOnlyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
     private func syncTodo(_ todo: LocalTodo) {
         let id = todo.id.uuidString.lowercased()
         let ownerStr = todo.ownerID.uuidString.lowercased()
@@ -656,9 +662,7 @@ private struct CategoryGroupView: View {
         let completed = todo.isCompleted
         let priority = todo.priority
         let sortOrder = todo.sortOrder
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd"
-        let assignedStr = todo.assignedDate.map { df.string(from: $0) }
+        let assignedStr = todo.assignedDate.map { Self.dateOnlyFormatter.string(from: $0) }
 
         Task {
             do {
@@ -682,9 +686,10 @@ private struct CategoryGroupView: View {
                         assigned_date: assignedStr, priority: priority, sort_order: sortOrder
                     ))
                     .execute()
-                print("[Todo] Synced: \(title)")
             } catch {
-                print("[Todo] Sync ERROR: \(error)")
+                #if DEBUG
+                print("[Todo] Sync error: \(error)")
+                #endif
             }
         }
     }

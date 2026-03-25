@@ -67,36 +67,49 @@ final class AppSettings {
         }
     }
 
+    // MARK: - Cached formatters
+
+    private static let timeFormatter24: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "HH:mm"; return f
+    }()
+    private static let timeFormatter12: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f
+    }()
+    private static let timeFormatterSystem: DateFormatter = {
+        let f = DateFormatter(); f.timeStyle = .short; return f
+    }()
+    private static let dateFormatterSystem: DateFormatter = {
+        let f = DateFormatter(); f.dateStyle = .medium; return f
+    }()
+    private static let dateFormatterYMD: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f
+    }()
+    private static let dateFormatterDMY: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "dd/MM/yyyy"; return f
+    }()
+    private static let dateFormatterMDY: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "MM/dd/yyyy"; return f
+    }()
+
     // MARK: - Formatted time string
 
     func formatTime(_ date: Date) -> String {
-        let f = DateFormatter()
         switch timeFormat {
-        case .system:
-            f.timeStyle = .short
-        case .h24:
-            f.dateFormat = "HH:mm"
-        case .h12:
-            f.dateFormat = "h:mm a"
+        case .system: Self.timeFormatterSystem.string(from: date)
+        case .h24: Self.timeFormatter24.string(from: date)
+        case .h12: Self.timeFormatter12.string(from: date)
         }
-        return f.string(from: date)
     }
 
     // MARK: - Formatted date string
 
     func formatDate(_ date: Date) -> String {
-        let f = DateFormatter()
         switch dateFormat {
-        case .system:
-            f.dateStyle = .medium
-        case .yyyyMMdd:
-            f.dateFormat = "yyyy-MM-dd"
-        case .ddMMyyyy:
-            f.dateFormat = "dd/MM/yyyy"
-        case .MMddyyyy:
-            f.dateFormat = "MM/dd/yyyy"
+        case .system: Self.dateFormatterSystem.string(from: date)
+        case .yyyyMMdd: Self.dateFormatterYMD.string(from: date)
+        case .ddMMyyyy: Self.dateFormatterDMY.string(from: date)
+        case .MMddyyyy: Self.dateFormatterMDY.string(from: date)
         }
-        return f.string(from: date)
     }
 
     func formatDateWithDay(_ date: Date) -> String {
