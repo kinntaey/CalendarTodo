@@ -25,6 +25,16 @@ struct TodoWidgetItem: Identifiable {
     let id: UUID
     let title: String
     let isCompleted: Bool
+    let categoryName: String?
+}
+
+extension TodoWidgetItem {
+    init(id: UUID, title: String, isCompleted: Bool) {
+        self.id = id
+        self.title = title
+        self.isCompleted = isCompleted
+        self.categoryName = nil
+    }
 }
 
 struct DailyTodoProvider: TimelineProvider {

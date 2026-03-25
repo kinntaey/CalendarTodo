@@ -1,35 +1,46 @@
 import CalendarTodoCore
 import SwiftUI
 
+enum RecurringDeleteOption {
+    case thisOnly
+    case thisAndFuture
+    case all
+}
+
 struct EventDetailView: View {
     let event: LocalEvent
     var onEdit: () -> Void
-    var onDelete: () -> Void
+    var onDelete: (_ option: RecurringDeleteOption?) -> Void
 
     @State private var showDeleteConfirm = false
+    @State private var showRecurringDeleteOptions = false
+    @State private var participants: [ParticipantWithProfile] = []
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 // Title
                 Text(event.title)
-                    .font(.title2.bold())
+                    .font(AppTheme.titleFont)
 
                 // Date & Time
                 VStack(alignment: .leading, spacing: 8) {
                     Label {
                         if event.isAllDay {
-                            Text(DateHelpers.dateFormatter.string(from: event.startAt) + " (종일)")
+                            Text(DateHelpers.dateFormatter.string(from: event.startAt) + " (\(L10n.allDay))")
+                                .font(AppTheme.bodyFont)
                         } else {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(DateHelpers.dateFormatter.string(from: event.startAt))
+                                    .font(AppTheme.bodyFont)
                                 Text("\(DateHelpers.timeFormatter.string(from: event.startAt)) - \(DateHelpers.timeFormatter.string(from: event.endAt))")
+                                    .font(AppTheme.captionFont)
                                     .foregroundStyle(.secondary)
                             }
                         }
                     } icon: {
                         Image(systemName: "clock")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(AppTheme.accent)
                     }
                 }
 
@@ -38,15 +49,16 @@ struct EventDetailView: View {
                     Label {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(locationName)
+                                .font(AppTheme.bodyFont)
                             if let address = event.locationAddress, !address.isEmpty {
                                 Text(address)
-                                    .font(.caption)
+                                    .font(AppTheme.captionFont)
                                     .foregroundStyle(.secondary)
                             }
                         }
                     } icon: {
                         Image(systemName: "mappin.and.ellipse")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(AppTheme.priorityHigh)
                     }
                 }
 
@@ -54,6 +66,7 @@ struct EventDetailView: View {
                 if let desc = event.eventDescription, !desc.isEmpty {
                     Label {
                         Text(desc)
+                            .font(AppTheme.bodyFont)
                     } icon: {
                         Image(systemName: "text.alignleft")
                             .foregroundStyle(.secondary)
@@ -63,10 +76,11 @@ struct EventDetailView: View {
                 // Alarms
                 if !event.alarms.isEmpty {
                     Label {
-                        Text(event.alarms.sorted().map { alarmLabel(minutes: $0) }.joined(separator: ", "))
+                        Text(event.alarms.sorted().map { L10n.alarmLabel(minutes: $0) }.joined(separator: ", "))
+                            .font(AppTheme.bodyFont)
                     } icon: {
                         Image(systemName: "bell")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(AppTheme.priorityMedium)
                     }
                 }
 
@@ -74,84 +88,123 @@ struct EventDetailView: View {
                 if let rule = event.recurrenceRule {
                     Label {
                         Text(recurrenceDescription(rule))
+                            .font(AppTheme.bodyFont)
                     } icon: {
                         Image(systemName: "repeat")
                             .foregroundStyle(.green)
                     }
                 }
 
-                // Tags
-                if let tags = event.tags, !tags.isEmpty {
-                    Label {
-                        FlowLayout(spacing: 6) {
-                            ForEach(tags, id: \.id) { tag in
-                                Text(tag.name)
-                                    .font(.caption)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color(hex: tag.color).opacity(0.2))
-                                    .clipShape(Capsule())
+                // Participants
+                if !participants.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label {
+                            Text(L10n.participants)
+                                .font(AppTheme.bodyFont)
+                        } icon: {
+                            Image(systemName: "person.2")
+                                .foregroundStyle(AppTheme.accent)
+                        }
+
+                        HStack(spacing: 16) {
+                            ForEach(participants) { p in
+                                VStack(spacing: 4) {
+                                    ProfileAvatar(name: p.profile.displayName, size: 36)
+                                    Text("@\(p.profile.username)")
+                                        .font(.system(size: 10, design: .rounded))
+                                        .foregroundStyle(.secondary)
+                                    if p.status == "owner" {
+                                        Image(systemName: "crown.fill")
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(.primary)
+                                    } else {
+                                        Text(p.status == "accepted" ? "✓" : "⏳")
+                                            .font(.system(size: 10))
+                                    }
+                                }
                             }
                         }
+                        .padding(.leading, 28)
+                    }
+                }
+
+                // Color tag
+                if let tags = event.tags, let firstTag = tags.first {
+                    Label {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color(hex: firstTag.color).opacity(0.08))
+                                .frame(width: 14, height: 14)
+                            if !firstTag.name.isEmpty {
+                                Text(firstTag.name)
+                                    .font(AppTheme.captionFont)
+                            }
+                        }
+                        .padding(.leading, 4)
                     } icon: {
-                        Image(systemName: "tag")
-                            .foregroundStyle(.purple)
+                        Image(systemName: "paintpalette")
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
-            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+        .task {
+            do {
+                // Try to fetch participants from Supabase using event title
+                // (since local events don't have Supabase IDs mapped yet)
+                participants = try await EventParticipantService().fetchParticipantsForTitle(event.title)
+            } catch {}
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button { onEdit() } label: {
-                        Label("수정", systemImage: "pencil")
+                        Label(L10n.edit, systemImage: "pencil")
                     }
                     Button(role: .destructive) {
-                        showDeleteConfirm = true
+                        if event.recurrenceRule != nil {
+                            showRecurringDeleteOptions = true
+                        } else {
+                            showDeleteConfirm = true
+                        }
                     } label: {
-                        Label("삭제", systemImage: "trash")
+                        Label(L10n.delete, systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
+                        .foregroundStyle(AppTheme.accent)
                 }
             }
         }
-        .alert("이벤트를 삭제하시겠습니까?", isPresented: $showDeleteConfirm) {
-            Button("삭제", role: .destructive) { onDelete() }
-            Button("취소", role: .cancel) {}
+        .alert(L10n.deleteEventConfirm, isPresented: $showDeleteConfirm) {
+            Button(L10n.delete, role: .destructive) { onDelete(nil) }
+            Button(L10n.cancel, role: .cancel) {}
         }
-    }
-
-    private func alarmLabel(minutes: Int) -> String {
-        switch minutes {
-        case 0: "이벤트 시간"
-        case 10: "10분 전"
-        case 30: "30분 전"
-        case 60: "1시간 전"
-        case 120: "2시간 전"
-        case 1440: "1일 전"
-        case 10080: "1주일 전"
-        case 20160: "2주일 전"
-        case 43200: "1개월 전"
-        default: "\(minutes)분 전"
+        .confirmationDialog(L10n.deleteRecurringTitle, isPresented: $showRecurringDeleteOptions, titleVisibility: .visible) {
+            Button(L10n.deleteThisOnly, role: .destructive) { onDelete(.thisOnly) }
+            Button(L10n.deleteThisAndFuture, role: .destructive) { onDelete(.thisAndFuture) }
+            Button(L10n.deleteAll, role: .destructive) { onDelete(.all) }
+            Button(L10n.cancel, role: .cancel) {}
         }
     }
 
     private func recurrenceDescription(_ rule: RecurrenceRule) -> String {
         switch rule.frequency {
-        case .daily: return "매일"
+        case .daily: return L10n.daily
         case .weekly:
             if let days = rule.daysOfWeek {
-                let names = ["월","화","수","목","금","토","일"]
+                let names = L10n.weekDayHeaders
                 let selected = days.sorted().compactMap { d in
                     (1...7).contains(d) ? names[d - 1] : nil
                 }
-                return "매주 " + selected.joined(separator: ", ")
+                return L10n.weekly + " " + selected.joined(separator: ", ")
             }
-            return "매주"
-        case .monthly: return "매달"
-        case .yearly: return "매년"
+            return L10n.weekly
+        case .monthly: return L10n.monthly
+        case .yearly: return L10n.yearly
         }
     }
 }

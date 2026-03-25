@@ -7,9 +7,10 @@ public final class SupabaseService {
     public let client: SupabaseClient
 
     private init() {
-        // TODO: Replace with your Supabase project credentials
-        let supabaseURL = URL(string: ProcessInfo.processInfo.environment["SUPABASE_URL"] ?? "https://your-project.supabase.co")!
-        let supabaseKey = ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"] ?? "your-anon-key"
+        guard let supabaseURL = URL(string: ProcessInfo.processInfo.environment["SUPABASE_URL"] ?? "YOUR_SUPABASE_URL") else {
+            fatalError("Invalid SUPABASE_URL. Set it in environment variables or Xcode scheme.")
+        }
+        let supabaseKey = ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"] ?? "YOUR_SUPABASE_ANON_KEY"
 
         client = SupabaseClient(
             supabaseURL: supabaseURL,

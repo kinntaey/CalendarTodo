@@ -9,6 +9,7 @@ public final class LocalTodoList {
     public var listType: String // daily, weekly, custom
     public var weekStartDate: Date? // for weekly type
     public var isShared: Bool
+    public var isPublic: Bool // true = 친구 공개, false = 나만 보기
 
     @Relationship(deleteRule: .cascade) public var todos: [LocalTodo]?
 
@@ -26,6 +27,7 @@ public final class LocalTodoList {
         listType: String = "daily",
         weekStartDate: Date? = nil,
         isShared: Bool = false,
+        isPublic: Bool = true,
         todos: [LocalTodo]? = nil,
         syncVersion: Int64 = 1,
         isDeleted: Bool = false,
@@ -39,6 +41,7 @@ public final class LocalTodoList {
         self.listType = listType
         self.weekStartDate = weekStartDate
         self.isShared = isShared
+        self.isPublic = isPublic
         self.todos = todos
         self.syncVersion = syncVersion
         self.isDeleted = isDeleted

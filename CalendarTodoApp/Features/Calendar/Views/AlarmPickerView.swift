@@ -4,17 +4,19 @@ struct AlarmPickerView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedAlarms: Set<Int>
 
-    private let alarmOptions: [(label: String, minutes: Int)] = [
-        ("이벤트 시간", 0),
-        ("10분 전", 10),
-        ("30분 전", 30),
-        ("1시간 전", 60),
-        ("2시간 전", 120),
-        ("1일 전", 1440),
-        ("1주일 전", 10080),
-        ("2주일 전", 20160),
-        ("1개월 전", 43200),
-    ]
+    private var alarmOptions: [(label: String, minutes: Int)] {
+        [
+            (L10n.atEventTime, 0),
+            (L10n.alarmLabel(minutes: 10), 10),
+            (L10n.alarmLabel(minutes: 30), 30),
+            (L10n.alarmLabel(minutes: 60), 60),
+            (L10n.alarmLabel(minutes: 120), 120),
+            (L10n.alarmLabel(minutes: 1440), 1440),
+            (L10n.alarmLabel(minutes: 10080), 10080),
+            (L10n.alarmLabel(minutes: 20160), 20160),
+            (L10n.alarmLabel(minutes: 43200), 43200),
+        ]
+    }
 
     var body: some View {
         NavigationStack {
@@ -39,13 +41,13 @@ struct AlarmPickerView: View {
                     }
                 }
             }
-            .navigationTitle("알람 선택")
+            .navigationTitle(L10n.selectAlarm)
             #if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("완료") { dismiss() }
+                    Button(L10n.done) { dismiss() }
                 }
             }
         }

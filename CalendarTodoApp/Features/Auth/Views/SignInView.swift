@@ -7,29 +7,33 @@ struct SignInView: View {
     @Environment(AuthService.self) private var authService
     @State private var currentNonce: String?
     @State private var errorMessage: String?
+    @State private var showEmailForm = false
+    @State private var email = ""
+    @State private var password = ""
+    @State private var isSignUp = false
 
     var body: some View {
-        VStack(spacing: 40) {
+        VStack(spacing: 0) {
             Spacer()
 
             // App Logo & Title
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 Image(systemName: "calendar.badge.checkmark")
-                    .font(.system(size: 72))
-                    .foregroundStyle(.blue)
+                    .font(.system(size: 56))
+                    .foregroundStyle(.primary)
 
-                Text("CalendarTodo")
-                    .font(.largeTitle.bold())
+                Text("Plan Todo")
+                    .font(AppTheme.displayFont)
 
-                Text("캘린더와 할 일을 한 곳에서")
-                    .font(.subheadline)
+                Text(L10n.calendarAndTodo)
+                    .font(AppTheme.captionFont)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
             // Sign In Buttons
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // Apple Sign In
                 SignInWithAppleButton(.signIn) { request in
                     let nonce = randomNonceString()
@@ -40,35 +44,117 @@ struct SignInView: View {
                     handleAppleSignIn(result)
                 }
                 .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
 
-                // Google Sign In
+                // Email Sign In
                 Button {
-                    // TODO: Implement Google Sign In with GoogleSignIn SDK
+                    withAnimation(.easeInOut(duration: 0.2)) { showEmailForm.toggle() }
                 } label: {
-                    HStack {
-                        Image(systemName: "g.circle.fill")
-                        Text("Google로 로그인")
+                    HStack(spacing: 10) {
+                        Image(systemName: "envelope.fill")
+                            .font(.system(size: 16))
+                        Text(L10n.signInWithEmail)
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(.white)
-                    .foregroundStyle(.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(.gray.opacity(0.3), lineWidth: 1)
-                    )
+                    .frame(height: 52)
+                    .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 14))
+                    .foregroundStyle(.primary)
+                }
+
+                // Email Form
+                if showEmailForm {
+                    VStack(spacing: 10) {
+                        TextField(L10n.email, text: $email)
+                            .textContentType(.emailAddress)
+                            #if !os(macOS)
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.emailAddress)
+                            #endif
+                            .autocorrectionDisabled()
+                            .font(.system(size: 15, design: .rounded))
+                            .padding(14)
+                            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 12))
+
+                        SecureField(L10n.password, text: $password)
+                            .textContentType(isSignUp ? .newPassword : .password)
+                            .font(.system(size: 15, design: .rounded))
+                            .padding(14)
+                            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 12))
+
+                        Button {
+                            isSignUp.toggle()
+                        } label: {
+                            if isSignUp {
+                                HStack(spacing: 0) {
+                                    Text(L10n.hasAccount)
+                                        .font(.system(size: 13, design: .rounded))
+                                        .foregroundColor(.secondary)
+                                    Text(" \(L10n.signIn)")
+                                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                                        .foregroundColor(.primary)
+                                        .underline()
+                                }
+                            } else {
+                                HStack(spacing: 0) {
+                                    Text(L10n.noAccount)
+                                        .font(.system(size: 13, design: .rounded))
+                                        .foregroundColor(.secondary)
+                                    Text(" \(L10n.signUp)")
+                                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                                        .foregroundColor(.primary)
+                                        .underline()
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            Task { await handleEmailAuth() }
+                        } label: {
+                            Text(isSignUp ? L10n.signUp : L10n.signIn)
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(
+                                    email.isEmpty || password.count < 6
+                                    ? AnyShapeStyle(Color.gray.opacity(0.3))
+                                    : AnyShapeStyle(AppTheme.accentGradient),
+                                    in: RoundedRectangle(cornerRadius: 14)
+                                )
+                        }
+                        .disabled(email.isEmpty || password.count < 6)
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
 
                 if let errorMessage {
                     Text(errorMessage)
+                        .font(.system(size: 13, design: .rounded))
                         .foregroundStyle(.red)
-                        .font(.caption)
+                        .multilineTextAlignment(.center)
                 }
             }
             .padding(.horizontal, 32)
-            .padding(.bottom, 60)
+            .padding(.bottom, 50)
+        }
+    }
+
+    // MARK: - Email Auth
+
+    private func handleEmailAuth() async {
+        errorMessage = nil
+        do {
+            if isSignUp {
+                try await authService.signUpWithEmail(email: email, password: password)
+            } else {
+                try await authService.signInWithEmail(email: email, password: password)
+            }
+        } catch {
+            errorMessage = L10n.signInFailed(error.localizedDescription)
         }
     }
 
@@ -82,7 +168,7 @@ struct SignInView: View {
                   let idToken = String(data: idTokenData, encoding: .utf8),
                   let nonce = currentNonce
             else {
-                errorMessage = "Apple 인증 정보를 가져올 수 없습니다."
+                errorMessage = L10n.appleCredentialError
                 return
             }
 
@@ -90,12 +176,12 @@ struct SignInView: View {
                 do {
                     try await authService.signInWithApple(idToken: idToken, nonce: nonce)
                 } catch {
-                    errorMessage = "로그인에 실패했습니다: \(error.localizedDescription)"
+                    errorMessage = L10n.signInFailed(error.localizedDescription)
                 }
             }
 
         case .failure(let error):
-            errorMessage = "Apple 로그인 실패: \(error.localizedDescription)"
+            errorMessage = L10n.appleSignInFailed(error.localizedDescription)
         }
     }
 

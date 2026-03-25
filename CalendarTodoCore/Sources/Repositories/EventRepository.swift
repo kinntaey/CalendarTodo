@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import WidgetKit
 
 @MainActor
 public final class EventRepository {
@@ -14,20 +15,30 @@ public final class EventRepository {
     public func create(_ event: LocalEvent) {
         modelContext.insert(event)
         try? modelContext.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     public func update(_ event: LocalEvent) {
         event.updatedAt = .now
         event.syncStatus = SyncStatus.pendingUpload.rawValue
         try? modelContext.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     public func softDelete(_ event: LocalEvent) {
-        event.isDeleted = true
-        event.status = "cancelled"
-        event.syncStatus = SyncStatus.pendingDelete.rawValue
-        event.updatedAt = .now
+        // Supabase에서도 삭제
+        Task {
+            try? await SupabaseService.shared.client
+                .from("events")
+                .delete()
+                .eq("id", value: event.id.uuidString.lowercased())
+                .execute()
+        }
+        // Apple 캘린더에서도 삭제
+        _ = EventKitService.shared.removeFromAppleCalendar(title: event.title, startDate: event.startAt)
+        modelContext.delete(event)
         try? modelContext.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     // MARK: - Queries
@@ -73,6 +84,21 @@ public final class EventRepository {
         var descriptor = FetchDescriptor<LocalEvent>(predicate: predicate)
         descriptor.fetchLimit = 1
         return try? modelContext.fetch(descriptor).first
+    }
+
+    /// Fetch all recurring events (events with recurrence rules)
+    public func fetchAllRecurringEvents() -> [LocalEvent] {
+        let predicate = #Predicate<LocalEvent> {
+            $0.isDeleted == false
+            && $0.recurrenceRuleData != nil
+        }
+
+        let descriptor = FetchDescriptor<LocalEvent>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.startAt)]
+        )
+
+        return (try? modelContext.fetch(descriptor)) ?? []
     }
 
     /// Returns dates that have events in a given month

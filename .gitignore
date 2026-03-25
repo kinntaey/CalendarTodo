@@ -36,3 +36,6 @@ supabase/.temp/
 # IDE
 .idea/
 .vscode/
+
+# APNs secrets
+Supabase/secrets/

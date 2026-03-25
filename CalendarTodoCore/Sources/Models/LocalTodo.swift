@@ -23,6 +23,9 @@ public final class LocalTodo {
     public var assignedTo: UUID?
     public var assignmentStatus: String // none, pending, accepted, declined
 
+    // Recurrence
+    public var recurrenceRuleData: Data?
+
     // Tags
     public var tags: [LocalTag]?
 
@@ -80,5 +83,15 @@ public final class LocalTodo {
         self.syncStatus = syncStatus
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+
+    public var recurrenceRule: RecurrenceRule? {
+        get {
+            guard let data = recurrenceRuleData else { return nil }
+            return try? JSONDecoder().decode(RecurrenceRule.self, from: data)
+        }
+        set {
+            recurrenceRuleData = try? JSONEncoder().encode(newValue)
+        }
     }
 }

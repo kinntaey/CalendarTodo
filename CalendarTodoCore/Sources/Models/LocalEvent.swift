@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-public final class LocalEvent {
+public final class LocalEvent: Identifiable {
     @Attribute(.unique) public var id: UUID
     public var ownerID: UUID
     public var title: String

@@ -26,12 +26,22 @@ struct EventWidgetItem: Identifiable {
     let title: String
     let startAt: Date
     let locationName: String?
+    let colorHex: String
+}
+
+struct MultiDayBarData: Identifiable {
+    let id: String
+    let title: String
+    let colorHex: String
+    let startCol: Int  // 0-6
+    let endCol: Int    // 0-6
+    let startsInWeek: Bool
 }
 
 struct UpcomingEventsProvider: TimelineProvider {
     func placeholder(in context: Context) -> EventEntry {
         EventEntry(date: .now, events: [
-            EventWidgetItem(id: UUID(), title: "샘플 일정", startAt: .now, locationName: nil),
+            EventWidgetItem(id: UUID(), title: "샘플 일정", startAt: .now, locationName: nil, colorHex: "#007AFF"),
         ])
     }
 
