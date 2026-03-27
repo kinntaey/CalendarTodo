@@ -5,15 +5,15 @@ struct RootView: View {
     @Environment(AuthService.self) private var authService
     @Environment(AppSettings.self) private var appSettings
 
+    @Environment(\.scenePhase) private var scenePhase
     @State private var hasProfile: Bool? = nil
     @State private var showCalendarSetup = false
+    @State private var wasInBackground = true
 
     var body: some View {
         Group {
             if !appSettings.hasCompletedOnboarding {
                 OnboardingView()
-            } else if authService.isLoading {
-                ProgressView(L10n.loading)
             } else if !authService.isAuthenticated {
                 SignInView()
             } else if hasProfile == nil {
@@ -30,11 +30,32 @@ struct RootView: View {
                 })
             } else {
                 ContentView()
+                    .onAppear {
+                        guard wasInBackground else { return }
+                        wasInBackground = false
+                        Task {
+                            await InterstitialAdManager.shared.loadAd()
+                            try? await Task.sleep(for: .seconds(1))
+                            InterstitialAdManager.shared.showAdIfNeeded()
+                        }
+                    }
             }
         }
         .animation(.default, value: authService.isAuthenticated)
         .animation(.default, value: appSettings.hasCompletedOnboarding)
         .animation(.default, value: hasProfile)
+        .onChange(of: scenePhase) { old, new in
+            if new == .background || new == .inactive {
+                wasInBackground = true
+            } else if new == .active && wasInBackground && authService.isAuthenticated {
+                wasInBackground = false
+                Task {
+                    await InterstitialAdManager.shared.loadAd()
+                    try? await Task.sleep(for: .seconds(1))
+                    InterstitialAdManager.shared.showAdIfNeeded()
+                }
+            }
+        }
         .onChange(of: authService.isAuthenticated) { _, isAuth in
             if isAuth {
                 hasProfile = nil // reset to trigger check

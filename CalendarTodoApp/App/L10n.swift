@@ -147,6 +147,12 @@ enum L10n {
     static var appleCredentialError: String { tr("Apple 인증 정보를 가져올 수 없습니다.", "Could not get Apple credentials.", "Apple認証情報を取得できません。", "无法获取Apple凭证。") }
     static func signInFailed(_ error: String) -> String { tr("로그인에 실패했습니다: \(error)", "Sign in failed: \(error)", "ログインに失敗しました: \(error)", "登录失败: \(error)") }
     static func appleSignInFailed(_ error: String) -> String { tr("Apple 로그인 실패: \(error)", "Apple sign in failed: \(error)", "Appleログイン失敗: \(error)", "Apple登录失败: \(error)") }
+    static var authInvalidCredentials: String { tr("이메일 또는 비밀번호가 올바르지 않습니다.", "Invalid email or password.", "メールアドレスまたはパスワードが正しくありません。", "邮箱或密码不正确。") }
+    static var authUserNotFound: String { tr("등록되지 않은 계정입니다.", "Account not found.", "アカウントが見つかりません。", "未找到该账号。") }
+    static var authEmailTaken: String { tr("이미 가입된 이메일입니다.", "This email is already registered.", "このメールアドレスは既に登録されています。", "该邮箱已注册。") }
+    static var authWeakPassword: String { tr("비밀번호는 6자 이상이어야 합니다.", "Password must be at least 6 characters.", "パスワードは6文字以上必要です。", "密码至少需要6个字符。") }
+    static var authInvalidEmail: String { tr("올바른 이메일 형식이 아닙니다.", "Invalid email format.", "メールアドレスの形式が正しくありません。", "邮箱格式不正确。") }
+    static var authTooManyRequests: String { tr("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", "Too many requests. Please try again later.", "リクエストが多すぎます。しばらくしてからお試しください。", "请求过多，请稍后再试。") }
 
     // MARK: - Profile Setup
     static var userId: String { tr("사용자 아이디", "Username", "ユーザーID", "用户名") }
@@ -154,17 +160,17 @@ enum L10n {
     static var alreadyInUse: String { tr("이미 사용 중", "Already in use", "使用中", "已被使用") }
     static var usernameRules: String { tr("3~20자, 영문 소문자, 숫자, 밑줄만 가능", "3-20 chars, lowercase, numbers, underscore only", "3〜20文字、英小文字・数字・アンダースコアのみ", "3-20位，仅限小写字母、数字、下划线") }
     static var displayName: String { tr("표시 이름", "Display Name", "表示名", "显示名称") }
-    static var displayNamePlaceholder: String { tr("홍길동", "John Doe", "山田太郎", "张三") }
+    static var displayNamePlaceholder: String { tr("이름", "Name", "名前", "名字") }
     static var checkUsername: String { tr("아이디 확인", "Check Username", "ID確認", "检查用户名") }
     static func checkFailed(_ error: String) -> String { tr("확인 실패: \(error)", "Check failed: \(error)", "確認失敗: \(error)", "检查失败: \(error)") }
     static func profileCreateFailed(_ error: String) -> String { tr("프로필 생성 실패: \(error)", "Profile creation failed: \(error)", "プロフィール作成失敗: \(error)", "创建资料失败: \(error)") }
     static var profileSetup: String { tr("프로필 설정", "Profile Setup", "プロフィール設定", "设置资料") }
 
     // MARK: - Placeholders
-    static var dailyTodoPlaceholder: String { tr("일일 투두 뷰 (Phase 3)", "Daily Todo View (Phase 3)", "日次タスクビュー (Phase 3)", "每日待办视图 (Phase 3)") }
-    static var weeklyTodoPlaceholder: String { tr("주간 투두 뷰 (Phase 3)", "Weekly Todo View (Phase 3)", "週間タスクビュー (Phase 3)", "每周待办视图 (Phase 3)") }
-    static var socialPlaceholder: String { tr("소셜 뷰 (Phase 5)", "Social View (Phase 5)", "ソーシャルビュー (Phase 5)", "社交视图 (Phase 5)") }
-    static var settingsPlaceholder: String { tr("설정 뷰", "Settings View", "設定ビュー", "设置视图") }
+    static var dailyTodoPlaceholder: String { tr("준비 중입니다", "Coming soon", "準備中です", "即将推出") }
+    static var weeklyTodoPlaceholder: String { tr("준비 중입니다", "Coming soon", "準備中です", "即将推出") }
+    static var socialPlaceholder: String { tr("준비 중입니다", "Coming soon", "準備中です", "即将推出") }
+    static var settingsPlaceholder: String { tr("준비 중입니다", "Coming soon", "準備中です", "即将推出") }
 
     // MARK: - Onboarding
     static var welcomeTitle: String { tr("환영합니다!", "Welcome!", "ようこそ！", "欢迎！") }
@@ -280,7 +286,16 @@ enum L10n {
     static var deleteAccountConfirm: String { tr("정말 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.", "Are you sure? This cannot be undone.", "本当に削除しますか？この操作は取り消せません。", "确定要删除账户吗？此操作无法撤销。") }
     static var deleteAccountWarning: String { tr("계정을 삭제하면 모든 데이터가 영구적으로 삭제됩니다.", "Deleting your account will permanently remove all data.", "アカウントを削除するとすべてのデータが完全に削除されます。", "删除账户将永久删除所有数据。") }
 
+    // MARK: - Ad Removal
+    static var removeAds: String { tr("광고 제거", "Remove Ads", "広告を削除", "移除广告") }
+    static var removeAdsDescription: String { tr("모든 광고를 영구적으로 제거합니다", "Remove all ads permanently", "すべての広告を永久に削除します", "永久移除所有广告") }
+    static var removeAdsCompleted: String { tr("광고가 제거되었습니다", "Ads removed", "広告が削除されました", "广告已移除") }
+    static var restorePurchase: String { tr("구매 복원", "Restore Purchase", "購入を復元", "恢复购买") }
+
     // MARK: - Email Auth
+    static var emailConfirmationTitle: String { tr("이메일을 확인해주세요", "Check your email", "メールを確認してください", "请查看您的邮箱") }
+    static func emailConfirmationMessage(_ email: String) -> String { tr("\(email)로 인증 메일을 보냈습니다.\n메일의 링크를 클릭하여 가입을 완료해주세요.", "We sent a verification email to \(email).\nClick the link to complete your sign up.", "\(email)に確認メールを送信しました。\nリンクをクリックして登録を完了してください。", "我们已向\(email)发送了验证邮件。\n请点击链接完成注册。") }
+    static var backToSignIn: String { tr("로그인으로 돌아가기", "Back to Sign In", "ログインに戻る", "返回登录") }
     static var signInWithEmail: String { tr("이메일로 로그인", "Sign in with Email", "メールでログイン", "使用邮箱登录") }
     static var email: String { tr("이메일", "Email", "メール", "邮箱") }
     static var password: String { tr("비밀번호", "Password", "パスワード", "密码") }

@@ -355,6 +355,26 @@ ALTER TABLE profiles ADD CONSTRAINT IF NOT EXISTS check_username_format
     CHECK (username ~ '^[a-z0-9_]{3,20}$');
 
 -- ============================================
+-- Storage: avatars bucket
+-- ============================================
+-- Run in Supabase Dashboard > Storage > Create bucket "avatars" (public)
+-- Then apply these policies:
+
+-- Allow authenticated users to upload their own avatar
+-- CREATE POLICY "avatar_upload" ON storage.objects FOR INSERT
+--     WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Allow anyone to read avatars (public bucket)
+-- CREATE POLICY "avatar_read" ON storage.objects FOR SELECT
+--     USING (bucket_id = 'avatars');
+
+-- Allow users to update/delete their own avatar
+-- CREATE POLICY "avatar_update" ON storage.objects FOR UPDATE
+--     USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+-- CREATE POLICY "avatar_delete" ON storage.objects FOR DELETE
+--     USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ============================================
 -- Realtime
 -- ============================================
 ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
@@ -362,3 +382,4 @@ ALTER PUBLICATION supabase_realtime ADD TABLE friendships;
 ALTER PUBLICATION supabase_realtime ADD TABLE event_participants;
 ALTER PUBLICATION supabase_realtime ADD TABLE todos;
 ALTER PUBLICATION supabase_realtime ADD TABLE todo_list_members;
+ALTER PUBLICATION supabase_realtime ADD TABLE profiles;

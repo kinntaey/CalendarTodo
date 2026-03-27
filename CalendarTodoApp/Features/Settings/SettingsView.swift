@@ -1,4 +1,5 @@
 import CalendarTodoCore
+import PhotosUI
 import SwiftUI
 
 struct SettingsView: View {
@@ -11,6 +12,8 @@ struct SettingsView: View {
     @State private var isDeleting = false
     @State private var errorMessage: String?
     @State private var appleCalendarEnabled = EventKitService.shared.hasAccess
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var isUploadingAvatar = false
 
     var body: some View {
         @Bindable var settings = settings
@@ -33,7 +36,28 @@ struct SettingsView: View {
 
                         if let profile {
                             HStack(spacing: 14) {
-                                ProfileAvatar(name: profile.displayName, size: 44)
+                                PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                                    ZStack(alignment: .bottomTrailing) {
+                                        ProfileAvatar(name: profile.displayName, size: 56, avatarURL: profile.avatarURL)
+
+                                        if isUploadingAvatar {
+                                            Circle()
+                                                .fill(.ultraThinMaterial)
+                                                .frame(width: 56, height: 56)
+                                            ProgressView()
+                                                .controlSize(.small)
+                                        }
+
+                                        Image(systemName: "camera.circle.fill")
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(.white, AppTheme.accent)
+                                            .offset(x: 4, y: 4)
+                                    }
+                                }
+                                .onChange(of: selectedPhoto) { _, newValue in
+                                    guard let newValue else { return }
+                                    Task { await uploadAvatar(item: newValue) }
+                                }
 
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text("@\(profile.username)")
@@ -48,6 +72,17 @@ struct SettingsView: View {
                                 }
 
                                 Spacer()
+
+                                if profile.avatarURL != nil {
+                                    Button {
+                                        Task { await removeAvatar() }
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 18))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
                     }
@@ -79,12 +114,14 @@ struct SettingsView: View {
                                 }
                             }
                             .pickerStyle(.menu)
+                            .fixedSize()
                         }
                     }
                     .padding(16)
                     .background(RoundedRectangle(cornerRadius: AppTheme.cardRadius).fill(Color(.systemBackground)))
                     .cardShadow()
                     .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
 
                     // Calendar Sync Card
                     VStack(alignment: .leading, spacing: 12) {
@@ -226,17 +263,39 @@ struct SettingsView: View {
         }
     }
 
+    private func uploadAvatar(item: PhotosPickerItem) async {
+        isUploadingAvatar = true
+        defer { isUploadingAvatar = false }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            let url = try await AvatarService.shared.uploadAvatar(imageData: data)
+            // Refresh profile to get new URL
+            profile = try await authService.fetchProfile()
+            selectedPhoto = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func removeAvatar() async {
+        do {
+            try await AvatarService.shared.deleteAvatar()
+            profile = try await authService.fetchProfile()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func deleteAccount() async {
         isDeleting = true
         defer { isDeleting = false }
         do {
-            if let userID = authService.currentUser?.id {
-                try await SupabaseService.shared.client
-                    .from("profiles")
-                    .delete()
-                    .eq("id", value: userID)
-                    .execute()
-            }
+            // Call Edge Function to delete auth user (cascades to all data)
+            struct EmptyBody: Encodable {}
+            try await SupabaseService.shared.client.functions.invoke(
+                "delete-account",
+                options: .init(body: EmptyBody())
+            )
             clearLocalData()
             try await authService.signOut()
         } catch {

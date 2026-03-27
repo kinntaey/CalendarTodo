@@ -392,6 +392,7 @@ private struct CategoryGroupView: View {
     @State private var newTodoTitle = ""
     @State private var showAddInput = false
     @State private var isRenamingCategory = false
+    @State private var draggingTodoID: UUID?
     @State private var renameCategoryTitle = ""
     @State private var showDeleteConfirm = false
     @FocusState private var isInputFocused: Bool
@@ -506,6 +507,16 @@ private struct CategoryGroupView: View {
                         onTodosChanged()
                     }
                 )
+                .onDrag {
+                    draggingTodoID = todo.id
+                    return NSItemProvider(object: todo.id.uuidString as NSString)
+                }
+                .onDrop(of: [.text], delegate: TodoDropDelegate(
+                    item: todo,
+                    items: $todos,
+                    draggingID: $draggingTodoID,
+                    onReorder: { updateSortOrder() }
+                ))
             }
 
             // Inline add todo
@@ -615,6 +626,15 @@ private struct CategoryGroupView: View {
                 .upsert(ListUpsert(id: id, owner_id: ownerStr, title: title, list_type: "custom", is_shared: isShared))
                 .execute()
         }
+    }
+
+    private func updateSortOrder() {
+        for (index, todo) in todos.enumerated() {
+            todo.sortOrder = index
+            todo.syncStatus = "pendingUpload"
+        }
+        try? modelContext.save()
+        onTodosChanged()
     }
 
     private func addTodo() {
@@ -777,5 +797,34 @@ private struct TodoItemRow: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 5)
+    }
+}
+
+// MARK: - Drag & Drop Reorder Delegate
+
+private struct TodoDropDelegate: DropDelegate {
+    let item: LocalTodo
+    @Binding var items: [LocalTodo]
+    @Binding var draggingID: UUID?
+    let onReorder: () -> Void
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggingID = nil
+        onReorder()
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let dragID = draggingID,
+              let fromIndex = items.firstIndex(where: { $0.id == dragID }),
+              let toIndex = items.firstIndex(where: { $0.id == item.id }),
+              fromIndex != toIndex else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            items.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
     }
 }

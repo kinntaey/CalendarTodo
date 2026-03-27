@@ -189,41 +189,10 @@ struct ContentView: View {
                 participantID: invitation.participantID, accept: true
             )
 
-            // Fetch the cloned event from Supabase and save to local SwiftData
+            // Sync to download the cloned event
             let userID = authService.currentUser?.id ?? UUID()
-            let events: [FullEventResponse] = try await SupabaseService.shared.client
-                .from("events")
-                .select()
-                .eq("owner_id", value: userID.uuidString.lowercased())
-                .eq("title", value: invitation.event.title)
-                .order("created_at", ascending: false)
-                .limit(1)
-                .execute()
-                .value
-
-            if let remote = events.first {
-                let colorStr = remote.color ?? "#007AFF"
-                let colorTag = LocalTag(ownerID: remote.owner_id, name: "", color: colorStr)
-                let localEvent = LocalEvent(
-                    id: remote.id,
-                    ownerID: remote.owner_id,
-                    title: remote.title,
-                    eventDescription: remote.description,
-                    startAt: remote.start_at,
-                    endAt: remote.end_at,
-                    isAllDay: remote.is_all_day,
-                    locationName: remote.location_name,
-                    locationAddress: remote.location_address,
-                    locationLat: remote.location_lat,
-                    locationLng: remote.location_lng,
-                    locationPlaceID: remote.location_place_id,
-                    alarms: remote.alarms ?? [],
-                    tags: [colorTag]
-                )
-                modelContext.insert(localEvent)
-                try? modelContext.save()
-                print("[Invitation] Event saved to local calendar: \(remote.title)")
-            }
+            await SyncService.shared.syncAll(modelContext: modelContext, ownerID: userID)
+            print("[Invitation] Event synced after accepting: \(invitation.event.title)")
         } catch {
             print("[Invitation] Accept error: \(error)")
         }
@@ -303,6 +272,7 @@ private struct InvitationPopupView: View {
     let invitation: EventInvitation
     let onAccept: () -> Void
     let onDecline: () -> Void
+    @State private var isProcessing = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -343,11 +313,13 @@ private struct InvitationPopupView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         let dateFormatter: DateFormatter = {
                             let f = DateFormatter()
+                            f.locale = DateHelpers.preferredLocale
                             f.setLocalizedDateFormatFromTemplate("yyyy MMM d EEEE")
                             return f
                         }()
                         let timeFormatter: DateFormatter = {
                             let f = DateFormatter()
+                            f.locale = DateHelpers.preferredLocale
                             f.setLocalizedDateFormatFromTemplate("HH:mm")
                             return f
                         }()
@@ -387,7 +359,11 @@ private struct InvitationPopupView: View {
 
             // 버튼
             HStack(spacing: 12) {
-                Button(action: onDecline) {
+                Button {
+                    guard !isProcessing else { return }
+                    isProcessing = true
+                    onDecline()
+                } label: {
                     Text(L10n.decline)
                         .font(.system(size: 16, weight: .medium, design: .rounded))
                         .foregroundStyle(.secondary)
@@ -395,15 +371,28 @@ private struct InvitationPopupView: View {
                         .frame(height: 48)
                         .background(Color(.systemGray5), in: RoundedRectangle(cornerRadius: 12))
                 }
+                .disabled(isProcessing)
 
-                Button(action: onAccept) {
-                    Text(L10n.accept)
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(AppTheme.accentGradient, in: RoundedRectangle(cornerRadius: 12))
+                Button {
+                    guard !isProcessing else { return }
+                    isProcessing = true
+                    onAccept()
+                } label: {
+                    if isProcessing {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(AppTheme.accentGradient, in: RoundedRectangle(cornerRadius: 12))
+                    } else {
+                        Text(L10n.accept)
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(AppTheme.accentGradient, in: RoundedRectangle(cornerRadius: 12))
+                    }
                 }
+                .disabled(isProcessing)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)

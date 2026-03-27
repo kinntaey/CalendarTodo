@@ -98,6 +98,13 @@ struct SocialView: View {
                         refreshID = UUID()
                     }
                 }
+
+                RealtimeService.shared.onProfileChange = {
+                    Task {
+                        await loadFriendData()
+                        refreshID = UUID()
+                    }
+                }
             }
             .refreshable {
                 await loadFriendData()
@@ -283,7 +290,7 @@ private struct FriendTodoSection: View {
                 }
             } label: {
                 HStack(spacing: 14) {
-                    ProfileAvatar(name: friendLists.profile.displayName, size: 44)
+                    ProfileAvatar(name: friendLists.profile.displayName, size: 44, avatarURL: friendLists.profile.avatarURL)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("@\(friendLists.profile.username)")
@@ -709,9 +716,7 @@ private struct PendingEventInvitationRow: View {
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
 
-                    let formatter = DateFormatter()
-                    let _ = formatter.setLocalizedDateFormatFromTemplate("MMMd EEE HH:mm")
-                    Text(formatter.string(from: invitation.event.start_at))
+                    Text(Self.invitationDateString(invitation.event.start_at))
                         .font(.system(size: 13, design: .rounded))
                         .foregroundStyle(.secondary)
                 }
@@ -736,6 +741,13 @@ private struct PendingEventInvitationRow: View {
                 onDecline: { Task { await viewModel.declineEventInvitation(invitation) } }
             )
         }
+    }
+
+    private static func invitationDateString(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale.current
+        f.setLocalizedDateFormatFromTemplate("MMMd EEE HH:mm")
+        return f.string(from: date)
     }
 }
 
@@ -893,8 +905,28 @@ private struct FriendSearchSection: View {
 struct ProfileAvatar: View {
     let name: String
     let size: CGFloat
+    var avatarURL: String? = nil
 
     var body: some View {
+        if let urlStr = avatarURL, let url = URL(string: urlStr) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: size, height: size)
+                        .clipShape(Circle())
+                default:
+                    initialAvatar
+                }
+            }
+        } else {
+            initialAvatar
+        }
+    }
+
+    private var initialAvatar: some View {
         Text(String(name.prefix(1)).uppercased())
             .font(.system(size: size * 0.4, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
@@ -908,7 +940,7 @@ private struct FriendRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ProfileAvatar(name: profile.displayName, size: 40)
+            ProfileAvatar(name: profile.displayName, size: 40, avatarURL: profile.avatarURL)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(profile.displayName)

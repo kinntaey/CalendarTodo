@@ -7,13 +7,10 @@ struct OnboardingView: View {
         @Bindable var settings = settings
 
         VStack(spacing: 0) {
+            Spacer()
+
             // Header
             VStack(spacing: 12) {
-                Image(systemName: "calendar.badge.checkmark")
-                    .font(.system(size: 60))
-                    .foregroundStyle(AppTheme.accentGradient)
-                    .padding(.top, 60)
-
                 Text(L10n.welcomeTitle)
                     .font(AppTheme.displayFont)
 

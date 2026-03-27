@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0068DE713A6E01DB96B427AD /* CalendarTodoCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8588687F54F612FB4BF391C9 /* CalendarTodoCore */; };
+		ADMOB_BUILD_00000000000001 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = ADMOB_PROD_00000000000001 /* GoogleMobileAds */; };
 		04A53115C512FB09DDFDAF07 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2E3ABCF4F13D062F6E02F1 /* ContentView.swift */; };
 		098A6F2CD1D82C150CFC6E88 /* CalendarTodoWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F6C96D99B671CA63F2C3CD96 /* CalendarTodoWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1D78B07F31153E0489BA7658 /* CalendarTodoCore in Frameworks */ = {isa = PBXBuildFile; productRef = 062852BD42E86C0BDE94A556 /* CalendarTodoCore */; };
@@ -85,6 +86,8 @@
 		AA300001FFFF000100000001 /* WeekCalendarWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA400001FFFF000100000001 /* WeekCalendarWidget.swift */; };
 		AA300002FFFF000100000002 /* WeekCalendarWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA400001FFFF000100000001 /* WeekCalendarWidget.swift */; };
 		FCFCB52BEF9C03C616A83A9E /* AlarmPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 261A0EFFA7C0373DF19CC708 /* AlarmPickerView.swift */; };
+		TT100001TTTT000100000001 /* ToggleTodoIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = TT200001TTTT000100000001 /* ToggleTodoIntent.swift */; };
+		TT100002TTTT000100000002 /* ToggleTodoIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = TT200001TTTT000100000001 /* ToggleTodoIntent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -135,6 +138,14 @@
 		00BUILDFILE0000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 00APPICON0000000000000001 /* Assets.xcassets */; };
 		01077344C7DB3E6C60603B92 /* CalendarMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarMonthView.swift; sourceTree = "<group>"; };
 		02BE48CF8424084B780CECCB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		02PRIVACY000000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		02PRIVBUILD000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 02PRIVACY000000000000001 /* PrivacyInfo.xcprivacy */; };
+		ADMOB_FILEREF_0000000001 /* BannerAdView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerAdView.swift; sourceTree = "<group>"; };
+		ADMOB_SRCBLD_0000000001 /* BannerAdView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADMOB_FILEREF_0000000001 /* BannerAdView.swift */; };
+		ADMOB_FILEREF_0000000002 /* InterstitialAdManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterstitialAdManager.swift; sourceTree = "<group>"; };
+		ADMOB_SRCBLD_0000000002 /* InterstitialAdManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADMOB_FILEREF_0000000002 /* InterstitialAdManager.swift */; };
+		ADMOB_FILEREF_0000000003 /* AdRemovalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdRemovalStore.swift; sourceTree = "<group>"; };
+		ADMOB_SRCBLD_0000000003 /* AdRemovalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADMOB_FILEREF_0000000003 /* AdRemovalStore.swift */; };
 		0565AD58DA5FAC62564A98E8 /* CalendarTodo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CalendarTodo.entitlements; sourceTree = "<group>"; };
 		0DA8CCDE1DB791C1D5D366A3 /* RecurrencePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurrencePickerView.swift; sourceTree = "<group>"; };
 		0FABDA6C8432B6CA1219F23E /* CalendarTodoWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CalendarTodoWidgets.entitlements; sourceTree = "<group>"; };
@@ -176,6 +187,7 @@
 		EE200001DDDD000100000001 /* FriendPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FriendPickerSheet.swift; path = CalendarTodoApp/Features/Social/Views/FriendPickerSheet.swift; sourceTree = SOURCE_ROOT; };
 		FF200001EEEE000100000001 /* CalendarSyncSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CalendarSyncSetupView.swift; path = CalendarTodoApp/App/CalendarSyncSetupView.swift; sourceTree = SOURCE_ROOT; };
 		AA400001FFFF000100000001 /* WeekCalendarWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekCalendarWidget.swift; sourceTree = "<group>"; };
+		TT200001TTTT000100000001 /* ToggleTodoIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleTodoIntent.swift; sourceTree = "<group>"; };
 		F6C96D99B671CA63F2C3CD96 /* CalendarTodoWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CalendarTodoWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FACF9A7CF0545C8510A3E5A2 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -202,6 +214,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1D78B07F31153E0489BA7658 /* CalendarTodoCore in Frameworks */,
+				ADMOB_BUILD_00000000000001 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,6 +290,7 @@
 				00APPICON0000000000000001 /* Assets.xcassets */,
 				0565AD58DA5FAC62564A98E8 /* CalendarTodo.entitlements */,
 				02BE48CF8424084B780CECCB /* Info.plist */,
+				02PRIVACY000000000000001 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -376,9 +390,20 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		ADMOB_GROUP_0000000000001 /* Ad */ = {
+			isa = PBXGroup;
+			children = (
+				ADMOB_FILEREF_0000000003 /* AdRemovalStore.swift */,
+				ADMOB_FILEREF_0000000001 /* BannerAdView.swift */,
+				ADMOB_FILEREF_0000000002 /* InterstitialAdManager.swift */,
+			);
+			path = Ad;
+			sourceTree = "<group>";
+		};
 		BDBDC6379DC1BE9057DD5871 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				ADMOB_GROUP_0000000000001 /* Ad */,
 				9B0A59CFAB64C8D43AEB9160 /* Auth */,
 				28A44B3224F37ED76F58FFA6 /* Calendar */,
 				A1E2C9A337C19B2028649397 /* Settings */,
@@ -422,6 +447,7 @@
 				B8319383974EBA80CFA90488 /* Info.plist */,
 				CE757462DD80F6A003B856E5 /* UpcomingEventsWidget.swift */,
 				AA400001FFFF000100000001 /* WeekCalendarWidget.swift */,
+				TT200001TTTT000100000001 /* ToggleTodoIntent.swift */,
 				1C00AE51CAA8EB0F8B0FE3A7 /* WidgetBundle.swift */,
 			);
 			path = CalendarTodoWidgets;
@@ -507,6 +533,7 @@
 			name = "CalendarTodo-iOS";
 			packageProductDependencies = (
 				062852BD42E86C0BDE94A556 /* CalendarTodoCore */,
+				ADMOB_PROD_00000000000001 /* GoogleMobileAds */,
 			);
 			productName = "CalendarTodo-iOS";
 			productReference = AB30ED09141B8278F8C155AF /* CalendarTodo.app */;
@@ -533,6 +560,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				E8209DA22E4E210A34363FBF /* XCLocalSwiftPackageReference "CalendarTodoCore" */,
+				ADMOB_PKGREF_000000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 75C57293C697B7B41802107B /* Products */;
@@ -584,6 +612,9 @@
 				DD100003CCCC000100000003 /* SocialViewModel.swift in Sources */,
 				EE100001DDDD000100000001 /* FriendPickerSheet.swift in Sources */,
 				FF100001EEEE000100000001 /* CalendarSyncSetupView.swift in Sources */,
+				ADMOB_SRCBLD_0000000001 /* BannerAdView.swift in Sources */,
+				ADMOB_SRCBLD_0000000002 /* InterstitialAdManager.swift in Sources */,
+				ADMOB_SRCBLD_0000000003 /* AdRemovalStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -633,6 +664,7 @@
 				D643AB4CC4D2832D6EE5DA55 /* DailyTodoWidget.swift in Sources */,
 				49607E71D03359F7FADE4A30 /* UpcomingEventsWidget.swift in Sources */,
 				AA300001FFFF000100000001 /* WeekCalendarWidget.swift in Sources */,
+				TT100001TTTT000100000001 /* ToggleTodoIntent.swift in Sources */,
 				EDDFDFB82E8C91C493DDDD08 /* WidgetBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -644,6 +676,7 @@
 				47FB417D20F3203029382F93 /* DailyTodoWidget.swift in Sources */,
 				7CF298BC4AA359D52106DCEB /* UpcomingEventsWidget.swift in Sources */,
 				AA300002FFFF000100000002 /* WeekCalendarWidget.swift in Sources */,
+				TT100002TTTT000100000002 /* ToggleTodoIntent.swift in Sources */,
 				6480EC4200CAEE41B65F4822 /* WidgetBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -656,6 +689,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				00BUILDFILE0000000000001 /* Assets.xcassets in Resources */,
+				02PRIVBUILD000000000001 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1003,6 +1037,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		ADMOB_PKGREF_000000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		062852BD42E86C0BDE94A556 /* CalendarTodoCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1019,6 +1064,11 @@
 		D9842855FC2CF4FEE57CDDFC /* CalendarTodoCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CalendarTodoCore;
+		};
+		ADMOB_PROD_00000000000001 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ADMOB_PKGREF_000000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -121,9 +121,9 @@ public final class SyncService {
 
             print("[Sync] Remote events found: \(remoteEvents.count)")
 
-            // Get local event IDs
+            // Get all local event IDs (including all owners to prevent any duplicates)
             let allLocal: [LocalEvent] = (try? modelContext.fetch(FetchDescriptor<LocalEvent>())) ?? []
-            let localIDs = Set(allLocal.filter { $0.ownerID == ownerID }.map { $0.id })
+            let localIDs = Set(allLocal.map { $0.id })
 
             for remote in remoteEvents {
                 if !localIDs.contains(remote.id) {

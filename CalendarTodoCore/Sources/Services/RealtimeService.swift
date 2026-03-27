@@ -11,6 +11,7 @@ public final class RealtimeService {
     public var onFriendshipChange: (() -> Void)?
     public var onNotificationChange: (() -> Void)?
     public var onTodoChange: (() -> Void)?
+    public var onProfileChange: (() -> Void)?
 
     private var channels: [RealtimeChannelV2] = []
 
@@ -63,13 +64,22 @@ public final class RealtimeService {
             filter: "owner_id=eq.\(userIDStr)"
         )
 
+        // Profile changes (for friend avatar updates)
+        let profileChannel = supabase.realtimeV2.channel("profiles")
+        let profileChanges = profileChannel.postgresChange(
+            AnyAction.self,
+            schema: "public",
+            table: "profiles"
+        )
+
         await epChannel.subscribe()
         await friendChannel.subscribe()
         await friendChannel2.subscribe()
         await notifChannel.subscribe()
         await todoChannel.subscribe()
+        await profileChannel.subscribe()
 
-        channels = [epChannel, friendChannel, friendChannel2, notifChannel, todoChannel]
+        channels = [epChannel, friendChannel, friendChannel2, notifChannel, todoChannel, profileChannel]
 
         Task {
             for await _ in epChanges {
@@ -98,6 +108,12 @@ public final class RealtimeService {
         Task {
             for await _ in todoChanges {
                 onTodoChange?()
+            }
+        }
+
+        Task {
+            for await _ in profileChanges {
+                onProfileChange?()
             }
         }
     }

@@ -167,8 +167,8 @@ final class WeeklyTodoViewModel {
             guard let d = $0.assignedDate else { return false }
             return DateHelpers.isSameDay(d, day)
         }) {
-            // 제거
-            existing.isDeleted = true
+            // 배정된 요일 다시 탭 → 삭제
+            modelContext.delete(existing)
             try? modelContext.save()
         } else {
             // 추가: 해당 날짜에 투두 생성
@@ -218,6 +218,21 @@ final class WeeklyTodoViewModel {
                     .eq("id", value: template.id.uuidString.lowercased()).execute()
             }
             modelContext.delete(template)
+        }
+        try? modelContext.save()
+        loadWeek()
+    }
+
+    // MARK: - Reorder
+
+    func reorderItems(_ items: [WeeklyTodoItem], in categoryID: UUID) {
+        guard let modelContext else { return }
+        for (index, item) in items.enumerated() {
+            for instance in item.instances {
+                instance.sortOrder = index
+                instance.syncStatus = "pendingUpload"
+            }
+            item.template?.sortOrder = index
         }
         try? modelContext.save()
         loadWeek()

@@ -66,7 +66,9 @@ public final class AuthService {
 
     // MARK: - Email Sign Up
 
-    public func signUpWithEmail(email: String, password: String) async throws {
+    /// Returns `true` if email confirmation is required (user not yet authenticated).
+    @discardableResult
+    public func signUpWithEmail(email: String, password: String) async throws -> Bool {
         isLoading = true
         defer { isLoading = false }
 
@@ -74,8 +76,15 @@ public final class AuthService {
             email: email,
             password: password
         )
-        currentUser = response.user
-        isAuthenticated = true
+
+        // When email confirmation is enabled, session is nil
+        if response.session != nil {
+            currentUser = response.user
+            isAuthenticated = true
+            return false
+        } else {
+            return true
+        }
     }
 
     // MARK: - Email Sign In
@@ -90,6 +99,18 @@ public final class AuthService {
         )
         currentUser = session.user
         isAuthenticated = true
+    }
+
+    // MARK: - Deep Link (Email Confirmation)
+
+    public func handleDeepLink(url: URL) async {
+        do {
+            let session = try await supabase.auth.session(from: url)
+            currentUser = session.user
+            isAuthenticated = true
+        } catch {
+            print("[Auth] Deep link handling failed: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Sign Out

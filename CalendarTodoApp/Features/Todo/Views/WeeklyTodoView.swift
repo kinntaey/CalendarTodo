@@ -261,7 +261,13 @@ private struct WeeklyCategorySection: View {
 
     @State private var showAddInput = false
     @State private var newTitle = ""
+    @State private var draggingItemID: String?
+    @State private var reorderedItems: [WeeklyTodoItem]?
     @FocusState private var isInputFocused: Bool
+
+    private var displayItems: [WeeklyTodoItem] {
+        reorderedItems ?? items
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -296,7 +302,7 @@ private struct WeeklyCategorySection: View {
             .padding(.horizontal, 20)
 
             // 투두 목표들
-            ForEach(items) { item in
+            ForEach(displayItems) { item in
                 WeeklyTodoRow(
                     item: item,
                     weekDays: weekDays,
@@ -305,6 +311,20 @@ private struct WeeklyCategorySection: View {
                     isDayCompleted: { viewModel.isDayCompleted($0, for: item) },
                     onDelete: { viewModel.deleteItem(item) }
                 )
+                .onDrag {
+                    draggingItemID = item.id
+                    reorderedItems = reorderedItems ?? items
+                    return NSItemProvider(object: item.id as NSString)
+                }
+                .onDrop(of: [.text], delegate: WeeklyDropDelegate(
+                    item: item,
+                    items: Binding(
+                        get: { reorderedItems ?? items },
+                        set: { reorderedItems = $0 }
+                    ),
+                    draggingID: $draggingItemID,
+                    onReorder: { viewModel.reorderItems(reorderedItems ?? items, in: category.id) ; reorderedItems = nil }
+                ))
             }
 
             // 인라인 추가 (카드 형태)
@@ -466,5 +486,34 @@ private struct WeeklyTodoRow: View {
         } message: {
             Text(L10n.deleteCategoryConfirm)
         }
+    }
+}
+
+// MARK: - Weekly Drop Delegate
+
+private struct WeeklyDropDelegate: DropDelegate {
+    let item: WeeklyTodoItem
+    @Binding var items: [WeeklyTodoItem]
+    @Binding var draggingID: String?
+    let onReorder: () -> Void
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggingID = nil
+        onReorder()
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let dragID = draggingID,
+              let fromIndex = items.firstIndex(where: { $0.id == dragID }),
+              let toIndex = items.firstIndex(where: { $0.id == item.id }),
+              fromIndex != toIndex else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            items.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
     }
 }

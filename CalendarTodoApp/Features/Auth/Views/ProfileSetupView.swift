@@ -1,4 +1,5 @@
 import CalendarTodoCore
+import PhotosUI
 import SwiftUI
 
 struct ProfileSetupView: View {
@@ -11,20 +12,53 @@ struct ProfileSetupView: View {
     @State private var errorMessage: String?
     @State private var isSubmitting = false
     @State private var checkTask: Task<Void, Never>?
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var avatarImageData: Data?
+    @State private var avatarPreview: Image?
 
     private var canSubmit: Bool {
-        username.count >= 3 && username.count <= 20
+        username.count >= 3 && username.count <= 20 && !displayName.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Header
+            // Header + Avatar picker
             VStack(spacing: 12) {
-                Image(systemName: "person.crop.circle.badge.plus")
-                    .font(.system(size: 56))
-                    .foregroundStyle(AppTheme.accent)
+                PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                    ZStack(alignment: .bottomTrailing) {
+                        if let avatarPreview {
+                            avatarPreview
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 80, height: 80)
+                                .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.crop.circle.badge.plus")
+                                .font(.system(size: 56))
+                                .foregroundStyle(AppTheme.accent)
+                        }
+
+                        Image(systemName: "camera.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundStyle(.white, AppTheme.accent)
+                            .offset(x: 4, y: 4)
+                    }
+                }
+                .onChange(of: selectedPhoto) { _, newValue in
+                    guard let newValue else { return }
+                    Task {
+                        if let data = try? await newValue.loadTransferable(type: Data.self) {
+                            avatarImageData = data
+                            #if canImport(UIKit)
+                            if let uiImage = UIImage(data: data) {
+                                avatarPreview = Image(uiImage: uiImage)
+                            }
+                            #endif
+                        }
+                    }
+                }
 
                 Text(L10n.profileSetup)
                     .font(AppTheme.displayFont)
@@ -34,6 +68,20 @@ struct ProfileSetupView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.bottom, 40)
+
+            // Display Name
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.displayName)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
+
+                TextField(L10n.displayNamePlaceholder, text: $displayName)
+                    .font(.system(size: 17, design: .rounded))
+                    .padding(14)
+                    .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 12)
 
             // Username
             VStack(alignment: .leading, spacing: 8) {
@@ -155,7 +203,10 @@ struct ProfileSetupView: View {
             let available = try await authService.checkUsernameAvailable(username)
             isAvailable = available
             guard available else { return }
-            try await authService.createProfile(username: username, displayName: username)
+            try await authService.createProfile(username: username, displayName: displayName.trimmingCharacters(in: .whitespaces))
+            if let avatarData = avatarImageData {
+                _ = try? await AvatarService.shared.uploadAvatar(imageData: avatarData)
+            }
             onComplete()
         } catch {
             errorMessage = L10n.profileCreateFailed(error.localizedDescription)

@@ -48,6 +48,11 @@ struct CalendarTodoApp: App {
                 .environment(authService)
                 .environment(appSettings)
                 .environment(\.locale, DateHelpers.preferredLocale)
+                .onOpenURL { url in
+                    Task {
+                        await authService.handleDeepLink(url: url)
+                    }
+                }
                 .task {
                     #if !os(macOS)
                     if authService.isAuthenticated {

@@ -144,7 +144,12 @@ final class SocialViewModel {
         }
     }
 
+    private var processingInvitationIDs: Set<UUID> = []
+
     func acceptEventInvitation(_ invitation: EventInvitation) async {
+        guard !processingInvitationIDs.contains(invitation.participantID) else { return }
+        processingInvitationIDs.insert(invitation.participantID)
+        defer { processingInvitationIDs.remove(invitation.participantID) }
         do {
             print("[Social] Accepting event invitation: \(invitation.participantID)")
             let clonedID = try await eventParticipantService.respondToInvitation(participantID: invitation.participantID, accept: true)

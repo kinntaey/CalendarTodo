@@ -11,17 +11,64 @@ struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var isSignUp = false
+    @State private var showEmailConfirmation = false
 
     var body: some View {
+        if showEmailConfirmation {
+            emailConfirmationView
+        } else {
+            signInContent
+        }
+    }
+
+    // MARK: - Email Confirmation View
+
+    private var emailConfirmationView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "envelope.badge")
+                .font(.system(size: 60))
+                .foregroundStyle(AppTheme.accentGradient)
+
+            VStack(spacing: 12) {
+                Text(L10n.emailConfirmationTitle)
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+
+                Text(L10n.emailConfirmationMessage(email))
+                    .font(.system(size: 15, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            Spacer()
+
+            Button {
+                showEmailConfirmation = false
+                isSignUp = false
+                password = ""
+                errorMessage = nil
+            } label: {
+                Text(L10n.backToSignIn)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(AppTheme.accentGradient, in: RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.bottom, 50)
+        }
+        .padding(.horizontal, 32)
+    }
+
+    // MARK: - Sign In Content
+
+    private var signInContent: some View {
         VStack(spacing: 0) {
             Spacer()
 
             // App Logo & Title
             VStack(spacing: 16) {
-                Image(systemName: "calendar.badge.checkmark")
-                    .font(.system(size: 56))
-                    .foregroundStyle(.primary)
-
                 Text("Plan Todo")
                     .font(AppTheme.displayFont)
 
@@ -114,19 +161,26 @@ struct SignInView: View {
                         Button {
                             Task { await handleEmailAuth() }
                         } label: {
-                            Text(isSignUp ? L10n.signUp : L10n.signIn)
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .background(
-                                    email.isEmpty || password.count < 6
-                                    ? AnyShapeStyle(Color.gray.opacity(0.3))
-                                    : AnyShapeStyle(AppTheme.accentGradient),
-                                    in: RoundedRectangle(cornerRadius: 14)
-                                )
+                            Group {
+                                if authService.isLoading {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Text(isSignUp ? L10n.signUp : L10n.signIn)
+                                }
+                            }
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(
+                                email.isEmpty || password.count < 6 || authService.isLoading
+                                ? AnyShapeStyle(Color.gray.opacity(0.3))
+                                : AnyShapeStyle(AppTheme.accentGradient),
+                                in: RoundedRectangle(cornerRadius: 14)
+                            )
                         }
-                        .disabled(email.isEmpty || password.count < 6)
+                        .disabled(email.isEmpty || password.count < 6 || authService.isLoading)
                     }
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
@@ -149,13 +203,34 @@ struct SignInView: View {
         errorMessage = nil
         do {
             if isSignUp {
-                try await authService.signUpWithEmail(email: email, password: password)
+                let needsConfirmation = try await authService.signUpWithEmail(email: email, password: password)
+                if needsConfirmation {
+                    withAnimation { showEmailConfirmation = true }
+                }
             } else {
                 try await authService.signInWithEmail(email: email, password: password)
             }
         } catch {
-            errorMessage = L10n.signInFailed(error.localizedDescription)
+            errorMessage = mapAuthError(error)
         }
+    }
+
+    private func mapAuthError(_ error: Error) -> String {
+        let msg = error.localizedDescription.lowercased()
+        if msg.contains("invalid login credentials") || msg.contains("invalid_credentials") {
+            return L10n.authInvalidCredentials
+        } else if msg.contains("user not found") {
+            return L10n.authUserNotFound
+        } else if msg.contains("already registered") || msg.contains("already been registered") || msg.contains("user_already_exists") {
+            return L10n.authEmailTaken
+        } else if msg.contains("weak password") || msg.contains("at least 6") {
+            return L10n.authWeakPassword
+        } else if msg.contains("invalid email") || msg.contains("unable to validate") {
+            return L10n.authInvalidEmail
+        } else if msg.contains("rate limit") || msg.contains("too many requests") || msg.contains("429") {
+            return L10n.authTooManyRequests
+        }
+        return L10n.signInFailed(error.localizedDescription)
     }
 
     // MARK: - Apple Sign In Handler

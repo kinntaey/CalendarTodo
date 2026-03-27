@@ -303,37 +303,41 @@ struct WeekCalendarWidgetView: View {
                 let grouped = Dictionary(grouping: entry.todos) { $0.categoryName ?? "" }
                 let sortedKeys = grouped.keys.sorted()
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 7) {
                     ForEach(sortedKeys, id: \.self) { category in
                         if !category.isEmpty {
                             Text(category)
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
                                 .foregroundStyle(.secondary)
+                                .padding(.top, 2)
                         }
 
                         ForEach(grouped[category] ?? []) { todo in
-                            HStack(spacing: 8) {
-                                ZStack {
-                                    if todo.isCompleted {
-                                        Circle()
-                                            .fill(.black)
-                                            .frame(width: 14, height: 14)
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 7, weight: .bold))
-                                            .foregroundStyle(.white)
-                                    } else {
-                                        Circle()
-                                            .stroke(Color(.systemGray3), lineWidth: 1.5)
-                                            .frame(width: 14, height: 14)
+                            Button(intent: ToggleTodoIntent(todoID: todo.id.uuidString)) {
+                                HStack(spacing: 8) {
+                                    ZStack {
+                                        if todo.isCompleted {
+                                            Circle()
+                                                .fill(.black)
+                                                .frame(width: 18, height: 18)
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 9, weight: .bold))
+                                                .foregroundStyle(.white)
+                                        } else {
+                                            Circle()
+                                                .stroke(Color(.systemGray3), lineWidth: 1.5)
+                                                .frame(width: 18, height: 18)
+                                        }
                                     }
-                                }
 
-                                Text(todo.title)
-                                    .font(.system(size: 13, design: .rounded))
-                                    .strikethrough(todo.isCompleted)
-                                    .foregroundStyle(todo.isCompleted ? .tertiary : .primary)
-                                .lineLimit(1)
+                                    Text(todo.title)
+                                        .font(.system(size: 15, design: .rounded))
+                                        .strikethrough(todo.isCompleted)
+                                        .foregroundStyle(todo.isCompleted ? .tertiary : .primary)
+                                        .lineLimit(1)
+                                }
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                 }

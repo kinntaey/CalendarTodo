@@ -73,13 +73,13 @@ final class AppSettings {
         let f = DateFormatter(); f.dateFormat = "HH:mm"; return f
     }()
     private static let timeFormatter12: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "h:mm a"; return f
     }()
     private static let timeFormatterSystem: DateFormatter = {
-        let f = DateFormatter(); f.timeStyle = .short; return f
+        let f = DateFormatter(); f.locale = Locale.current; f.timeStyle = .short; return f
     }()
     private static let dateFormatterSystem: DateFormatter = {
-        let f = DateFormatter(); f.dateStyle = .medium; return f
+        let f = DateFormatter(); f.locale = Locale.current; f.dateStyle = .medium; return f
     }()
     private static let dateFormatterYMD: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f

@@ -1,9 +1,11 @@
 import Foundation
 
 public enum DateHelpers {
-    /// Locale derived from user's preferred language (not region)
+    /// Locale derived from system language + region
     public static var preferredLocale: Locale {
-        Locale(identifier: Locale.preferredLanguages.first ?? "en")
+        let lang = Locale.preferredLanguages.first ?? "en"
+        // Use the full language tag (e.g. "en-US", "ko-KR") which includes region info
+        return Locale(identifier: lang)
     }
 
     public static let calendar: Calendar = {

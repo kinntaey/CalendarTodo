@@ -310,6 +310,7 @@ final class EventViewModel {
 
             // Build change message
             let formatter = DateFormatter()
+            formatter.locale = DateHelpers.preferredLocale
             formatter.setLocalizedDateFormatFromTemplate("MMMd HH:mm")
             let changeMsg = "'\(eventTitle)' \(formatter.string(from: newStart))"
 

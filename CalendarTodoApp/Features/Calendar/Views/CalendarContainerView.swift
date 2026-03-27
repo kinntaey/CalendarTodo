@@ -58,6 +58,14 @@ struct CalendarContainerView: View {
                                 .padding(.horizontal, 8)
                                 .padding(.bottom, 12)
 
+                            // Ad banner between calendar and events
+                            if !AdRemovalStore.shared.isAdRemoved {
+                                BannerAdView()
+                                    .frame(height: 50)
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 8)
+                            }
+
                             // Events for selected date below calendar
                             selectedDateEventsView
                         case .week:
@@ -303,6 +311,7 @@ private struct AppleEventRow: View {
                         .lineLimit(1)
 
                     let formatter = DateFormatter()
+                    let _ = { formatter.locale = DateHelpers.preferredLocale }()
                     let _ = formatter.setLocalizedDateFormatFromTemplate("MMMd HH:mm")
                     let duration = event.endDate.timeIntervalSince(event.startDate)
                     let days = Int(duration / 86400)
@@ -418,6 +427,7 @@ private struct SelectedDateEventRow: View {
                         .lineLimit(1)
 
                     let formatter = DateFormatter()
+                    let _ = { formatter.locale = DateHelpers.preferredLocale }()
                     let _ = formatter.setLocalizedDateFormatFromTemplate("MMMd HH:mm")
                     let duration = event.endAt.timeIntervalSince(event.startAt)
                     let days = Int(duration / 86400)
